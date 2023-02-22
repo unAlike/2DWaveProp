@@ -7,8 +7,8 @@ public class Driver : MonoBehaviour {
     // Start is called before the first frame update
     LineRenderer Hline, Eline;
     FDTD[] HFields, EFields;
-    [SerializeField]
-    ComputeShader Compute;
+    public ComputeShader Compute;
+    public RenderTexture render;
 
     public int Width, Height = 10;
 
@@ -20,8 +20,6 @@ public class Driver : MonoBehaviour {
     float E3, E2, E1, H3, H2, H1 = 0;
     public bool shouldUpdate = true;
     void Start() {
-
-        print(GameObject.Find("GridCanvas").GetComponent<Image>().mainTexture.graphicsFormat);
 
         NUM_FDTD = Width*Height;
         add =0;
@@ -70,24 +68,19 @@ public class Driver : MonoBehaviour {
 
     public void setupGrid() {
         GameObject grid = GameObject.Find("GridCanvas");
-        float imgsizex = grid.GetComponent<RectTransform>().rect.width / Width;
-        float imgsizey = grid.GetComponent<RectTransform>().rect.height / Height;
-        for(int y = 0; y<Height; y++){
-            for(int x=0; x<Width; x++){
-                GameObject tile = new GameObject();
-                Image NewImage = tile.AddComponent<Image>();
-                tile.transform.SetParent(grid.transform);
-                tile.SetActive(true);
-                tile.GetComponent<RectTransform>().localPosition = new Vector3((imgsizex/2)+x*imgsizex,(-imgsizey/2)-(y*imgsizey),0);
-                //Vector3 an = 
-                tile.GetComponent<RectTransform>().anchorMin = new Vector2(0,1);
-                tile.GetComponent<RectTransform>().anchorMax = new Vector2(0,1);
-                tile.GetComponent<RectTransform>().localScale = new Vector3(1,1,1);
-                RectTransform r = tile.GetComponent<RectTransform>();
-                r.sizeDelta = new Vector2(imgsizex,imgsizey);
-                NewImage.color = Random.ColorHSV();
-            }
-        }
+        RectTransform ImgRect = GameObject.Find("SimWindow").GetComponent<RectTransform>();
+        render = new RenderTexture((int)ImgRect.rect.width,(int)ImgRect.rect.height,255);
+        render.enableRandomWrite = true;
+        render.Create();
+
+        GameObject.Find("SimWindow").GetComponent<RawImage>().texture = render;
+
+        Compute.SetTexture(0,"Result",render);
+        Compute.Dispatch(0,render.width/8,render.height/8,1);
+
+
+        Graphics.Blit(GameObject.Find("SimWindow").GetComponent<RawImage>().texture, render);
+
         // for(int i = 0; i<NUM_FDTD; i++){
         //     HFields[i].Position = Vector3.zero;
         //     EFields[i].Position = Vector3.zero;
@@ -96,7 +89,6 @@ public class Driver : MonoBehaviour {
         // }
         //Reset Boundry
         H3=0; H2=0; H1=0; E3=0; E2=0; E1 = 0;
-        imgs = GameObject.Find("GridCanvas").GetComponentsInChildren<Image>();
     }
     // Update is called once per frame
     // void Update() {
@@ -113,9 +105,21 @@ public class Driver : MonoBehaviour {
             //updateEField();
             //EFields[0].Position.y = add;
             debug();
-            foreach(Image i in imgs){
-                changePixel(i);
-            }
+        }
+        if (counter>100){
+            counter=0;
+            RectTransform ImgRect = GameObject.Find("SimWindow").GetComponent<RectTransform>();
+            render = new RenderTexture((int)ImgRect.rect.width,(int)ImgRect.rect.height,255);
+            render.enableRandomWrite = true;
+            render.Create();
+
+            GameObject.Find("SimWindow").GetComponent<RawImage>().texture = render;
+
+            Compute.SetTexture(0,"Result",render);
+            Compute.Dispatch(0,render.width/8,render.height/8,1);
+
+
+            Graphics.Blit(GameObject.Find("SimWindow").GetComponent<RawImage>().texture, render);
         }
     }
 
@@ -144,7 +148,6 @@ public class Driver : MonoBehaviour {
         }
         E3=E2;E2=E1;E1=EFields[NUM_FDTD-1].Position.y;
     }
-
 
     public void AddDevice(){
         GameObject go = GameObject.Find("Panel");
@@ -184,8 +187,5 @@ public class Driver : MonoBehaviour {
         if(Input.GetKeyDown(KeyCode.P)){
             EFields[10].Position.y = 70;
         }
-    }
-    void changePixel(Image i){
-        i.color = Random.ColorHSV();
     }
 }
