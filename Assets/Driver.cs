@@ -7,17 +7,22 @@ public class Driver : MonoBehaviour {
     // Start is called before the first frame update
     LineRenderer Hline, Eline;
     FDTD[] HFields, EFields;
+    [SerializeField]
+    ComputeShader Compute;
 
     public int Width, Height = 10;
 
     int NUM_FDTD = 100;
-
+    Image[] imgs;
     int counter;
     public float timeStep, C, u, e, Mh, Me, time, TProp, dist, add;
 
     float E3, E2, E1, H3, H2, H1 = 0;
     public bool shouldUpdate = true;
     void Start() {
+
+        print(GameObject.Find("GridCanvas").GetComponent<Image>().mainTexture.graphicsFormat);
+
         NUM_FDTD = Width*Height;
         add =0;
         EFields = new FDTD[NUM_FDTD];
@@ -91,6 +96,7 @@ public class Driver : MonoBehaviour {
         // }
         //Reset Boundry
         H3=0; H2=0; H1=0; E3=0; E2=0; E1 = 0;
+        imgs = GameObject.Find("GridCanvas").GetComponentsInChildren<Image>();
     }
     // Update is called once per frame
     // void Update() {
@@ -107,7 +113,9 @@ public class Driver : MonoBehaviour {
             //updateEField();
             //EFields[0].Position.y = add;
             debug();
-
+            foreach(Image i in imgs){
+                changePixel(i);
+            }
         }
     }
 
@@ -177,5 +185,7 @@ public class Driver : MonoBehaviour {
             EFields[10].Position.y = 70;
         }
     }
-
+    void changePixel(Image i){
+        i.color = Random.ColorHSV();
+    }
 }
