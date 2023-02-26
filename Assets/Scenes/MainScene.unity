@@ -427,6 +427,7 @@ GameObject:
   - component: {fileID: 402332783}
   - component: {fileID: 402332785}
   - component: {fileID: 402332784}
+  - component: {fileID: 402332786}
   m_Layer: 5
   m_Name: SimWindow
   m_TagString: Untagged
@@ -449,11 +450,11 @@ RectTransform:
   m_Father: {fileID: 1875796589}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -205, y: 0.0000000011642}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 512, y: 512}
-  m_Pivot: {x: 0.5, y: 0.5}
+  m_Pivot: {x: 0, y: 0}
 --- !u!114 &402332784
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -489,6 +490,35 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 402332782}
   m_CullTransparentMesh: 1
+--- !u!114 &402332786
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 402332782}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0b148fe25e99eb48b9724523833bab1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Delegates:
+  - eventID: 4
+    callback:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 1875796592}
+          m_TargetAssemblyTypeName: Driver, Assembly-CSharp
+          m_MethodName: UI
+          m_Mode: 1
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: UI
+            m_BoolArgument: 0
+          m_CallState: 2
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0
@@ -1345,8 +1375,9 @@ MonoBehaviour:
   SimCompute: {fileID: 7200000, guid: f264039c0ac408645a31ad0a6ff0a668, type: 3}
   CellsCompute: {fileID: 7200000, guid: 40ca4553e4fdb45469f95f3a44066512, type: 3}
   render: {fileID: 8400000, guid: 28fe384c87094df429f5ef7de81fda33, type: 2}
-  Width: 50
-  Height: 50
+  Width: 512
+  Height: 512
+  resolution: 512
   timeStep: 0
   C: 0
   u: 0
