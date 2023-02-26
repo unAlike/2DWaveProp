@@ -1342,7 +1342,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: de8ef95ebf9930647ae483bf675563bb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Compute: {fileID: 7200000, guid: f264039c0ac408645a31ad0a6ff0a668, type: 3}
+  SimCompute: {fileID: 7200000, guid: f264039c0ac408645a31ad0a6ff0a668, type: 3}
+  CellsCompute: {fileID: 7200000, guid: 40ca4553e4fdb45469f95f3a44066512, type: 3}
   render: {fileID: 8400000, guid: 28fe384c87094df429f5ef7de81fda33, type: 2}
   Width: 50
   Height: 50

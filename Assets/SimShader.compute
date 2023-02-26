@@ -3,23 +3,33 @@
 
 struct FDTD{
     float3 pos;
+    float4 color;
     float time;
     float coef;
 };
+float rand (float2 uv){
+    return frac(sin(dot(uv,float2(12.9898,78.233)))*43758.5453123);
+}
 
 RWStructuredBuffer<FDTD> cells;
 float resolution;
-
-
+float time;
 
 RWTexture2D<float4> Result;
-
-[numthreads(8,8,1)]
+[numthreads(10,1,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
+    int xPos = id.x/resolution;
+    int yPos = id.y/resolution;
+    
     FDTD cell = cells[id.x];
     cells[id.x] = cell;
-    Result[id.xy] = float4((id.x | id.y), (id.x & resolution)*100, (id.y & resolution)*100, 1.0)*100;
+    
+    if((id.x+1)%resolution<2 | (id.y+1)%resolution<2){
+        Result[id.xy] = float4(1,1,1,1);
+    }
+    if(1 != 0){
+        Result[id.xy] = float4(1,0,1,1);
+    }
+    Result[id.xy] = cell.color;
 }
-
-

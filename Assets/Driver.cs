@@ -7,7 +7,7 @@ public class Driver : MonoBehaviour {
     // Start is called before the first frame update
     LineRenderer Hline, Eline;
     FDTD[] HFields, EFields;
-    public ComputeShader Compute;
+    public ComputeShader SimCompute, CellsCompute;
     public RenderTexture render;
 
     public int Width, Height = 10;
@@ -20,7 +20,6 @@ public class Driver : MonoBehaviour {
     float E3, E2, E1, H3, H2, H1 = 0;
     public bool shouldUpdate = true;
     void Start() {
-
         NUM_FDTD = Width*Height;
         add =0;
         EFields = new FDTD[NUM_FDTD];
@@ -42,6 +41,11 @@ public class Driver : MonoBehaviour {
             FDTD e = new FDTD();
             HFields[i] = h;
             EFields[i] = e;
+
+            HFields[i].Position = Vector3.zero;
+            HFields[i].Color = Random.ColorHSV();
+            HFields[i].coef = 37f;
+            HFields[i].time = 0;
             //Coef
             // HFields[i].coef = Mh;
             // EFields[i].coef = Me;
@@ -67,32 +71,14 @@ public class Driver : MonoBehaviour {
     }
 
     public void setupGrid() {
+
         GameObject grid = GameObject.Find("GridCanvas");
         RectTransform ImgRect = GameObject.Find("SimWindow").GetComponent<RectTransform>();
         render = new RenderTexture((int)ImgRect.rect.width,(int)ImgRect.rect.height,255);
         render.enableRandomWrite = true;
         render.Create();
-
         GameObject.Find("SimWindow").GetComponent<RawImage>().texture = render;
-
-        Compute.SetTexture(0,"Result",render);
-        Compute.Dispatch(0,render.width/8,render.height/8,1);
-
-
-        Graphics.Blit(GameObject.Find("SimWindow").GetComponent<RawImage>().texture, render);
-
-        // for(int i = 0; i<NUM_FDTD; i++){
-        //     HFields[i].Position = Vector3.zero;
-        //     EFields[i].Position = Vector3.zero;
-        //     Hline.SetPosition(i,(new Vector3((-Screen.width/2)+Screen.width * (i+1)/NUM_FDTD,0,-0.01f)));
-        //     Eline.SetPosition(i,(new Vector3((-Screen.width/2)+Screen.width * (i+1)/NUM_FDTD,0,-0.01f)));
-        // }
-        //Reset Boundry
-        H3=0; H2=0; H1=0; E3=0; E2=0; E1 = 0;
     }
-    // Update is called once per frame
-    // void Update() {
-    // }
 
     void FixedUpdate(){
         add/=1.5f;
@@ -106,18 +92,18 @@ public class Driver : MonoBehaviour {
             //EFields[0].Position.y = add;
             debug();
         }
-        if (counter>100){
+        if (counter>10){
+            //randomizeColors();
             counter=0;
-            RectTransform ImgRect = GameObject.Find("SimWindow").GetComponent<RectTransform>();
-            render = new RenderTexture((int)ImgRect.rect.width,(int)ImgRect.rect.height,255);
-            render.enableRandomWrite = true;
-            render.Create();
+            ComputeBuffer col = new ComputeBuffer(HFields.Length,sizeof(float)*9);
+            col.SetData(HFields);
+            SimCompute.SetBuffer(0, "cells", col);
+            SimCompute.SetTexture(0,"Result",render);
+            SimCompute.SetFloat("resolution", 25);
+            SimCompute.SetFloat("time", counter);
+            SimCompute.Dispatch(0,render.width/10,render.height,1);
 
-            GameObject.Find("SimWindow").GetComponent<RawImage>().texture = render;
-
-            Compute.SetTexture(0,"Result",render);
-            Compute.Dispatch(0,render.width/8,render.height/8,1);
-
+            col.Release();
 
             Graphics.Blit(GameObject.Find("SimWindow").GetComponent<RawImage>().texture, render);
         }
@@ -149,18 +135,9 @@ public class Driver : MonoBehaviour {
         E3=E2;E2=E1;E1=EFields[NUM_FDTD-1].Position.y;
     }
 
+
     public void AddDevice(){
-        GameObject go = GameObject.Find("Panel");
-        Rect r = go.GetComponent<Image>().GetPixelAdjustedRect();
-        Color a = go.GetComponent<Image>().color;
-        a.a = .4f;
-        go.GetComponent<Image>().color = a;
-        print(r.xMin + ", "+ r.xMax);
-        for(int i =0; i<NUM_FDTD-1; i++){
-            if(r.xMin < Hline.GetPosition(i).x && Hline.GetPosition(i).x < r.xMax){
-                HFields[i].coef = .2f;
-            }
-        }
+        // TODO
     }
     
     public void setSim(bool r){
@@ -172,20 +149,24 @@ public class Driver : MonoBehaviour {
         else{
             GameObject.Find("StatusText").GetComponent<Text>().text = "Status: Running";
             GameObject.Find("StatusText").GetComponent<Text>().color = Color.green;
+        }
+    }
 
+    void changeColor(){
+        for(int i =0; i<NUM_FDTD; i++){
+            HFields[i].Color = Random.ColorHSV();
         }
     }
 
     void debug(){
         if(Input.GetKey(KeyCode.Q)){
-            //HFields[0].Position.x = 40;
-            add += 50;
+            changeColor();
         }
         else{
             
         }
         if(Input.GetKeyDown(KeyCode.P)){
-            EFields[10].Position.y = 70;
+
         }
     }
 }
