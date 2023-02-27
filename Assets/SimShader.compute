@@ -26,5 +26,4 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     cells[id.x] = cell;
     
     Result[id.xy] = cells[(xPos)+(yPos*resolution)].color;
-    
 }

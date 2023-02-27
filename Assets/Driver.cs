@@ -21,9 +21,6 @@ public class Driver : MonoBehaviour {
     float E3, E2, E1, H3, H2, H1 = 0;
     public bool shouldUpdate = true;
     void Start() {
-        Width = (int)resolution;
-        Height = (int)resolution;
-        NUM_FDTD = Width*Height;
         add =0;
         
         print(C);
@@ -48,6 +45,9 @@ public class Driver : MonoBehaviour {
         setupGrid();
     }
     public void setupCells(){
+        Width = (int)resolution;
+        Height = (int)resolution;
+        NUM_FDTD = Width*Height;
         EFields = new FDTD[NUM_FDTD];
         HFields = new FDTD[NUM_FDTD];
         for(int i=0; i< NUM_FDTD; i++){
@@ -59,12 +59,12 @@ public class Driver : MonoBehaviour {
 
             HFields[i].Position = new Vector3(i%resolution,Mathf.FloorToInt(i/resolution),0);
             HFields[i].Color = Random.ColorHSV();
-            HFields[i].coef = 1;
+            HFields[i].coef = .5f;
             HFields[i].time = 0;
 
             EFields[i].Position = new Vector3((i%resolution) + .5f, .5f + Mathf.FloorToInt(i/resolution),0);
             EFields[i].Color = Random.ColorHSV();
-            EFields[i].coef = 1;
+            EFields[i].coef = .5f;
             EFields[i].time = 0;
         }
     }
@@ -97,21 +97,17 @@ public class Driver : MonoBehaviour {
             //updateEField();
             //EFields[0].Position.y = add;
         }
-        if (true){
-            //randomizeColors();
-            counter=0;
-            ComputeBuffer col = new ComputeBuffer(HFields.Length,sizeof(float)*9);
-            col.SetData(HFields);
-            SimCompute.SetBuffer(0, "cells", col);
-            SimCompute.SetTexture(0,"Result",render);
-            SimCompute.SetFloat("resolution", resolution);
-            SimCompute.SetFloat("time", counter);
-            SimCompute.Dispatch(0,render.width,render.height,1);
+        ComputeBuffer col = new ComputeBuffer(HFields.Length,sizeof(float)*9);
+        col.SetData(HFields);
+        SimCompute.SetBuffer(0, "cells", col);
+        SimCompute.SetTexture(0,"Result",render);
+        SimCompute.SetFloat("resolution", resolution);
+        SimCompute.SetFloat("time", counter);
+        SimCompute.Dispatch(0,render.width,render.height,1);
 
-            col.Release();
+        col.Release();
 
-            Graphics.Blit(GameObject.Find("SimWindow").GetComponent<RawImage>().texture, render);
-        }
+        Graphics.Blit(GameObject.Find("SimWindow").GetComponent<RawImage>().texture, render);
     }
 
 
@@ -123,6 +119,7 @@ public class Driver : MonoBehaviour {
         CellsCompute.SetBuffer(0,"HFields",HFieldBuffer);
         CellsCompute.SetBuffer(0,"EFields", EFieldBuffer);
         CellsCompute.SetFloat("dist", dist);
+        CellsCompute.SetFloat("version", 0);
         CellsCompute.Dispatch(0,HFields.Length,1,1);
 
         HFieldBuffer.GetData(HFields);

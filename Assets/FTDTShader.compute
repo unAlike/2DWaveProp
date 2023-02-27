@@ -1,5 +1,8 @@
 // Each #kernel tells which function to compile; you can have many kernels
 #pragma kernel CSMain
+#define HFIELD 0
+#define EFIELD 1
+
 
 struct FDTD{
     float3 pos;
@@ -11,13 +14,19 @@ struct FDTD{
 RWStructuredBuffer<FDTD> HFields;
 RWStructuredBuffer<FDTD> EFields;
 float dist;
+int version;
 
 [numthreads(1,1,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
     FDTD cell = HFields[id.x];
-    cell.pos.x = cell.pos.x + (cell.coef * ((EFields[id.x+1].pos.y - EFields[id.x].pos.y))/dist);
-    cell.color = float4(cell.pos/100,1);
+    if(version == HFIELD){
+        cell.pos.x = cell.pos.x + (cell.coef * ((EFields[id.x+1].pos.y - EFields[id.x].pos.y))/dist);
+    }
+    if(version == EFIELD){
 
+    }
+
+    cell.color = float4(cell.pos/100,1);
     HFields[id.x] = cell;
 }
