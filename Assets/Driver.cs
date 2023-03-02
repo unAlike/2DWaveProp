@@ -50,6 +50,7 @@ public class Driver : MonoBehaviour {
         NUM_FDTD = Width*Height;
         EFields = new FDTD[NUM_FDTD];
         HFields = new FDTD[NUM_FDTD];
+
         for(int i=0; i< NUM_FDTD; i++){
             //Create 600 FDTD cells
             FDTD h = new FDTD();
@@ -67,6 +68,8 @@ public class Driver : MonoBehaviour {
             EFields[i].coef = .5f;
             EFields[i].time = 0;
         }
+
+
     }
     public void setupGrid() {
 
@@ -200,15 +203,16 @@ public class Driver : MonoBehaviour {
         if(Input.GetKeyDown(KeyCode.E)){
             updateHField();
         }
+
     }
 
     public void UI(){
         Vector2 pos;
         RectTransform r = GameObject.Find("SimWindow").GetComponent<RectTransform>();
         pos = Input.mousePosition;
-        pos.x = Mathf.FloorToInt(resolution*(pos.x/r.rect.width));
-        pos.y = Mathf.FloorToInt(resolution*(pos.y/r.rect.height));
-        HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Color = Color.red;
+        pos.x = Mathf.FloorToInt(resolution*(pos.x/r.rect.width)-1);
+        pos.y = Mathf.FloorToInt(resolution*(pos.y/r.rect.height)-1);
+        if(pos.x < resolution) HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Color = Color.red;
     }
 
     public void onHover(){
@@ -223,4 +227,5 @@ public class Driver : MonoBehaviour {
             "\nCoef: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].coef;
 
     }
+
 }

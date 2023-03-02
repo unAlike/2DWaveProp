@@ -20,13 +20,14 @@ int version;
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
     FDTD cell = HFields[id.x];
-    if(version == HFIELD){
-        cell.pos.x = cell.pos.x + (cell.coef * ((EFields[id.x+1].pos.y - EFields[id.x].pos.y))/dist);
-    }
-    if(version == EFIELD){
+    // if(version == HFIELD){
+    //     cell.pos.x = cell.pos.x + (cell.coef * ((EFields[id.x+1].pos.y - EFields[id.x].pos.y))/dist);
 
-    }
+    // }
+    // if(version == EFIELD){
 
-    cell.color = float4(cell.pos/100,1);
+    // }
+
+    cell.color = float4(1,0,1,1);
     HFields[id.x] = cell;
 }
