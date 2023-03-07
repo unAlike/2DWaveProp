@@ -7,14 +7,11 @@ struct FDTD{
     float time;
     float coef;
 };
-float rand (float2 uv){
-    return frac(sin(dot(uv,float2(12.9898,78.233)))*43758.5453123);
-};
 
 RWStructuredBuffer<FDTD> cells;
+RWTexture2D<float4> Result;
 float resolution;
 float time;
-RWTexture2D<float4> Result;
 
 
 [numthreads(1,1,1)]
@@ -26,6 +23,9 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     FDTD cell = cells[id.x];
     cells[id.x] = cell;
     
-    
-    Result[id.xy] = cells[(xPos)+(yPos*resolution)].color;
+    // float4 c = float4(lerp(cells[(xPos)+(yPos*resolution)].color.r,0,cells[(xPos)+(yPos*resolution)].pos.z),
+    // lerp(cells[(xPos)+(yPos*resolution)].color.r,0));
+
+    Result[id.xy] =  cells[(xPos)+(yPos*resolution)].color;
+
 }

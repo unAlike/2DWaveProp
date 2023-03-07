@@ -22,7 +22,7 @@ public class Driver : MonoBehaviour {
     public bool shouldUpdate = true;
     void Start() {
         add =0;
-        
+        C = 299792458;
         print(C);
         time = 0;
         timeStep = Mathf.Pow(1*10,-10);
@@ -59,11 +59,13 @@ public class Driver : MonoBehaviour {
             EFields[i] = e;
 
             HFields[i].Position = new Vector3(i%resolution,Mathf.FloorToInt(i/resolution),0);
+            //HFields[i].Curl = new Vector3(0,0,0);
             HFields[i].Color = Random.ColorHSV();
             HFields[i].coef = .5f;
             HFields[i].time = 0;
 
             EFields[i].Position = new Vector3((i%resolution) + .5f, .5f + Mathf.FloorToInt(i/resolution),0);
+            //EFields[i].Curl = new Vector3(0,0,0);
             EFields[i].Color = Random.ColorHSV();
             EFields[i].coef = .5f;
             EFields[i].time = 0;
@@ -141,18 +143,33 @@ public class Driver : MonoBehaviour {
         // HFields[NUM_FDTD-1].Position.x += (HFields[NUM_FDTD-1].coef * (E3 - EFields[NUM_FDTD-1].Position.y));
         // H3=H2; H2=H1; H1=HFields[0].Position.x;
     }
-    // }
-    // void updateEField(){
-    //     EFields[0].Position.y += EFields[0].coef * (HFields[0].Position.y - E3);
-    //     for(int i=1; i<NUM_FDTD-1; i++){   
-    //         //Update Equation for Every EField
-    //         EFields[i].Position.y = EFields[i].Position.y + (EFields[i].coef * (HFields[i].Position.x - HFields[i-1].Position.x)/dist);
-    //         Vector3 pos = Eline.GetPosition(i);
-    //         pos.y = EFields[i].Position.y;
-    //         Eline.SetPosition(i,pos);
-    //     }
-    //     E3=E2;E2=E1;E1=EFields[NUM_FDTD-1].Position.y;
-    // }
+    void updateEField(){
+        ComputeBuffer HFieldBuffer = new ComputeBuffer(HFields.Length,sizeof(float)*9);
+        ComputeBuffer EFieldBuffer = new ComputeBuffer(EFields.Length, sizeof(float)*9);
+        HFieldBuffer.SetData(HFields);
+        EFieldBuffer.SetData(EFields);
+        CellsCompute.SetBuffer(0,"HFields",HFieldBuffer);
+        CellsCompute.SetBuffer(0,"EFields", EFieldBuffer);
+        CellsCompute.SetFloat("dist", dist);
+        CellsCompute.SetFloat("version", 1);
+        CellsCompute.Dispatch(0,EFields.Length,1,1);
+
+        EFieldBuffer.GetData(EFields);
+
+        HFieldBuffer.Release();
+        EFieldBuffer.Release();
+
+
+        // EFields[0].Position.y += EFields[0].coef * (HFields[0].Position.y - E3);
+        // for(int i=1; i<NUM_FDTD-1; i++){   
+        //     //Update Equation for Every EField
+        //     EFields[i].Position.y = EFields[i].Position.y + (EFields[i].coef * (HFields[i].Position.x - HFields[i-1].Position.x)/dist);
+        //     Vector3 pos = Eline.GetPosition(i);
+        //     pos.y = EFields[i].Position.y;
+        //     Eline.SetPosition(i,pos);
+        // }
+        // E3=E2;E2=E1;E1=EFields[NUM_FDTD-1].Position.y;
+    }
 
 
     public void AddDevice(){
@@ -225,6 +242,8 @@ public class Driver : MonoBehaviour {
             "\nColor: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Color+
             "\nPosition: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Position+
             "\nCoef: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].coef;
+
+            //"\nCurl: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Curl;
 
     }
 
