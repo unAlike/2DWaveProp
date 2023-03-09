@@ -125,6 +125,7 @@ public class Driver : MonoBehaviour {
         CellsCompute.SetBuffer(0,"EFields", EFieldBuffer);
         CellsCompute.SetFloat("dist", dist);
         CellsCompute.SetFloat("version", 0);
+        CellsCompute.SetFloat("resolution", Width);
         CellsCompute.Dispatch(0,HFields.Length,1,1);
 
         HFieldBuffer.GetData(HFields);
@@ -152,6 +153,7 @@ public class Driver : MonoBehaviour {
         CellsCompute.SetBuffer(0,"EFields", EFieldBuffer);
         CellsCompute.SetFloat("dist", dist);
         CellsCompute.SetFloat("version", 1);
+        CellsCompute.SetFloat("resolution", Width);
         CellsCompute.Dispatch(0,EFields.Length,1,1);
 
         EFieldBuffer.GetData(EFields);
@@ -217,8 +219,11 @@ public class Driver : MonoBehaviour {
             }
         }
 
-        if(Input.GetKeyDown(KeyCode.E)){
+        if(Input.GetKeyDown(KeyCode.H)){
             updateHField();
+        }
+        if(Input.GetKeyDown(KeyCode.E)){
+            updateEField();
         }
 
     }
@@ -240,7 +245,8 @@ public class Driver : MonoBehaviour {
         pos.y = Mathf.FloorToInt(resolution*(pos.y/r.rect.height));
         GameObject.Find("InfoText").GetComponent<Text>().text = "Info:\nCoords: "+ pos +
             "\nColor: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Color+
-            "\nPosition: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Position+
+            "\nPosition E: " + EFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Position+
+            "\nPosition H: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Position+
             "\nCoef: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].coef;
 
             //"\nCurl: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Curl;

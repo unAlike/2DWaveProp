@@ -16,6 +16,7 @@ RWStructuredBuffer<FDTD> HFields;
 RWStructuredBuffer<FDTD> EFields;
 float time;
 float dist;
+float resolution;
 int version;
 
 [numthreads(1,1,1)]
@@ -30,27 +31,27 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 
     if(version == HFIELD){
         //calc
-        CEz = -((HFields[id.x].coef/C)*(HFields[id.x].pos.z-HFields[id.x-1].pos.z)/time);
-        CHx = (1/C)*(((EFields[id.x+1].pos.x*EFields[id.x+1].coef)-(EFields[id.x].pos.x*EFields[id.x].coef))/time);
-        CHy = (1/C)*(((EFields[id.x+1].pos.y*EFields[id.x+1].coef)-(EFields[id.x].pos.y*EFields[id.x].coef))/time);
 
         //update
+        CEz = -((HFields[id.x].coef/C)*(HFields[id.x].pos.z-HFields[id.x-1].pos.z)/time);
         H.pos.z = HFields[id.x-1].pos.z+(-((C*time)/H.coef)*CEz);
-        E.pos.x = (1/EFields[id.x].coef)*((EFields[id.x-1].coef*EFields[id.x-1].pos.x) + ((C*time)*CHx));
-        E.pos.x = (1/EFields[id.x].coef)*((EFields[id.x-1].coef*EFields[id.x-1].pos.y) + ((C*time)*CHy));
 
     }
     if(version == EFIELD){
+        CHx = (1/C)*(((EFields[id.x+1].pos.x*EFields[id.x+1].coef)-(EFields[id.x].pos.x*EFields[id.x].coef))/time);
+        CHy = (1/C)*(((EFields[id.x+(1*resolution)].pos.y*EFields[id.x+(1*resolution)].coef)-(EFields[id.x].pos.y*EFields[id.x].coef))/time);
+        E.pos.x = (1/EFields[id.x].coef)*((EFields[id.x-1].coef*EFields[id.x-1].pos.x) + ((C*time)*CHx));
+        E.pos.y = (1/EFields[id.x].coef)*((EFields[id.x-(1*resolution)].coef*EFields[id.x-resolution].pos.y) + ((C*time)*CHy));
         //calc
-        CEx = -(HFields[id.x].coef/C)*((HFields[id.x].pos.x-HFields[id.x-1].pos.x)/time);
-        CEy = -(HFields[id.x].coef/C)*((HFields[id.x].pos.y-HFields[id.x-1].pos.y)/time);
-        CHz = (1/C) * ((EFields[id.x+1].pos.z-EFields[id.x].pos.z)/time);
-        float Dz = E.coef*E.pos.z;
+        // CEx = -(HFields[id.x].coef/C)*((HFields[id.x].pos.x-HFields[id.x-1].pos.x)/time);
+        // CEy = -(HFields[id.x].coef/C)*((HFields[id.x].pos.y-HFields[id.x-1].pos.y)/time);
+        // CHz = (1/C) * ((EFields[id.x+1].pos.z-EFields[id.x].pos.z)/time);
+        // float Dz = E.coef*E.pos.z;
 
-        //update
-        H.pos.x = HFields[id.x-1].pos.x + ((-((C*time)/H.coef))*CEx);
-        H.pos.y = HFields[id.x-1].pos.y + ((-((C*time)/H.coef))*CEx);
-        E.pos.z = (1/E.coef)*((Dz) + ((C*time) * CHz));
+        // //update
+        // H.pos.x = HFields[id.x-1].pos.x + ((-((C*time)/H.coef))*CEx);
+        // H.pos.y = HFields[id.x-1].pos.y + ((-((C*time)/H.coef))*CEx);
+        // E.pos.z = (1/E.coef)*((Dz) + ((C*time) * CHz));
     }
     HFields[id.x] = H;
     EFields[id.x] = E;
