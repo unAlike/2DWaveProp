@@ -22,10 +22,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     
     FDTD cell = cells[id.x];
     cells[id.x] = cell;
-    
-    // float4 c = float4(lerp(cells[(xPos)+(yPos*resolution)].color.r,0,cells[(xPos)+(yPos*resolution)].pos.z),
-    // lerp(cells[(xPos)+(yPos*resolution)].color.r,0));
 
-    Result[id.xy] =  cells[(xPos)+(yPos*resolution)].color;
+    Result[id.xy] =  float4(cells[(xPos)+(yPos*resolution)].pos,1);
 
 }

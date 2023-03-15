@@ -5,6 +5,5 @@ using UnityEngine;
 public struct FDTD {
     public Vector3 Position;
     public Color Color;
-    public float time;
     public float coef;
 }

@@ -7,6 +7,8 @@ public class Driver : MonoBehaviour {
     // Start is called before the first frame update
     LineRenderer Hline, Eline;
     FDTD[] HFields, EFields;
+
+    FDTD[,] test;
     public ComputeShader SimCompute, CellsCompute;
     public RenderTexture render;
 
@@ -20,6 +22,8 @@ public class Driver : MonoBehaviour {
 
     float E3, E2, E1, H3, H2, H1 = 0;
     public bool shouldUpdate = true;
+
+    Vector2 selectedCell = new Vector2(0,0);
     void Start() {
         add =0;
         C = 299792458;
@@ -51,6 +55,19 @@ public class Driver : MonoBehaviour {
         EFields = new FDTD[NUM_FDTD];
         HFields = new FDTD[NUM_FDTD];
 
+        //test
+        test = new FDTD[Width,Height];
+        for(int x=0; x< Width; x++){
+            for(int y=0; y< Height; y++){
+                FDTD h = new FDTD();
+                h.Position = new Vector3(0,0,0);
+                //HFields[i].Curl = new Vector3(0,0,0);
+                h.Color = Random.ColorHSV();
+                h.coef = .1f;
+                test[x,y] = h;
+            }
+        }
+
         for(int i=0; i< NUM_FDTD; i++){
             //Create 600 FDTD cells
             FDTD h = new FDTD();
@@ -58,17 +75,15 @@ public class Driver : MonoBehaviour {
             HFields[i] = h;
             EFields[i] = e;
 
-            HFields[i].Position = new Vector3(i%resolution,Mathf.FloorToInt(i/resolution),0);
+            HFields[i].Position = new Vector3(0,0,0);
             //HFields[i].Curl = new Vector3(0,0,0);
             HFields[i].Color = Random.ColorHSV();
-            HFields[i].coef = .5f;
-            HFields[i].time = 0;
+            HFields[i].coef = .1f;
 
-            EFields[i].Position = new Vector3((i%resolution) + .5f, .5f + Mathf.FloorToInt(i/resolution),0);
+            EFields[i].Position = new Vector3(0,0,0);
             //EFields[i].Curl = new Vector3(0,0,0);
             EFields[i].Color = Random.ColorHSV();
-            EFields[i].coef = .5f;
-            EFields[i].time = 0;
+            EFields[i].coef = .1f;
         }
 
 
@@ -92,22 +107,21 @@ public class Driver : MonoBehaviour {
         }
     }
     void FixedUpdate(){
+        printStats();
         add/=1.5f;
         if(shouldUpdate){
             counter++;
             time = (float)counter*(float)timeStep;
             //Update H from E
-            //updateHField();
+            updateHField();
             //Update E From H
-            //updateEField();
-            //EFields[0].Position.y = add;
+            updateEField();
         }
-        ComputeBuffer col = new ComputeBuffer(HFields.Length,sizeof(float)*9);
-        col.SetData(HFields);
+        ComputeBuffer col = new ComputeBuffer(HFields.Length,sizeof(float)*8);
+        col.SetData(EFields);
         SimCompute.SetBuffer(0, "cells", col);
         SimCompute.SetTexture(0,"Result",render);
         SimCompute.SetFloat("resolution", resolution);
-        SimCompute.SetFloat("time", counter);
         SimCompute.Dispatch(0,render.width,render.height,1);
 
         col.Release();
@@ -117,49 +131,53 @@ public class Driver : MonoBehaviour {
 
 
     void updateHField(){
-        ComputeBuffer HFieldBuffer = new ComputeBuffer(HFields.Length,sizeof(float)*9);
-        ComputeBuffer EFieldBuffer = new ComputeBuffer(EFields.Length, sizeof(float)*9);
+        ComputeBuffer HFieldBuffer = new ComputeBuffer(HFields.Length,sizeof(float)*8);
+        ComputeBuffer HUpdatedBuffer = new ComputeBuffer(HFields.Length,sizeof(float)*8);
+        ComputeBuffer EFieldBuffer = new ComputeBuffer(EFields.Length, sizeof(float)*8);
+
         HFieldBuffer.SetData(HFields);
+        HUpdatedBuffer.SetData(HFields);
         EFieldBuffer.SetData(EFields);
+
         CellsCompute.SetBuffer(0,"HFields",HFieldBuffer);
+        CellsCompute.SetBuffer(0,"HUpdated",HUpdatedBuffer);
         CellsCompute.SetBuffer(0,"EFields", EFieldBuffer);
+
         CellsCompute.SetFloat("dist", dist);
         CellsCompute.SetFloat("version", 0);
         CellsCompute.SetFloat("resolution", Width);
+        CellsCompute.SetFloat("time", timeStep);
+
         CellsCompute.Dispatch(0,HFields.Length,1,1);
 
-        HFieldBuffer.GetData(HFields);
+        HUpdatedBuffer.GetData(HFields);
+        //HFieldBuffer.GetData(HFields);
 
         HFieldBuffer.Release();
         EFieldBuffer.Release();
-
-        // for(int i=0; i<NUM_FDTD-1;i++){
-        //     // Update Equation for Every HField
-        //     HFields[i].Position.x = HFields[i].Position.x + (HFields[i].coef * ((EFields[i+1].Position.y - EFields[i].Position.y))/dist);
-
-        //     Vector3 pos = Hline.GetPosition(i);
-        //     pos.y = HFields[i].Position.x;
-        //     Hline.SetPosition(i,pos);
-        // }
-        // HFields[NUM_FDTD-1].Position.x += (HFields[NUM_FDTD-1].coef * (E3 - EFields[NUM_FDTD-1].Position.y));
-        // H3=H2; H2=H1; H1=HFields[0].Position.x;
+        HUpdatedBuffer.Release();
     }
     void updateEField(){
-        ComputeBuffer HFieldBuffer = new ComputeBuffer(HFields.Length,sizeof(float)*9);
-        ComputeBuffer EFieldBuffer = new ComputeBuffer(EFields.Length, sizeof(float)*9);
+        ComputeBuffer HFieldBuffer = new ComputeBuffer(HFields.Length,sizeof(float)*8);
+        ComputeBuffer EFieldBuffer = new ComputeBuffer(EFields.Length, sizeof(float)*8);
+        ComputeBuffer EUpdatedBuffer = new ComputeBuffer(EFields.Length, sizeof(float)*8);
         HFieldBuffer.SetData(HFields);
         EFieldBuffer.SetData(EFields);
+        EUpdatedBuffer.SetData(EFields);
         CellsCompute.SetBuffer(0,"HFields",HFieldBuffer);
         CellsCompute.SetBuffer(0,"EFields", EFieldBuffer);
+        CellsCompute.SetBuffer(0,"EUpdated", EUpdatedBuffer);
         CellsCompute.SetFloat("dist", dist);
         CellsCompute.SetFloat("version", 1);
         CellsCompute.SetFloat("resolution", Width);
+        CellsCompute.SetFloat("time", timeStep);
         CellsCompute.Dispatch(0,EFields.Length,1,1);
 
-        EFieldBuffer.GetData(EFields);
+        EUpdatedBuffer.GetData(EFields);
 
         HFieldBuffer.Release();
         EFieldBuffer.Release();
+        EUpdatedBuffer.Release();
 
 
         // EFields[0].Position.y += EFields[0].coef * (HFields[0].Position.y - E3);
@@ -215,7 +233,7 @@ public class Driver : MonoBehaviour {
         }
         if(Input.GetKeyDown(KeyCode.M)){
             for(int i =0; i<HFields.Length;i++){
-                HFields[200].Position = new Vector3(255,255,255);
+                HFields[0].Position = new Vector3(1,1,0);
             }
         }
 
@@ -224,6 +242,9 @@ public class Driver : MonoBehaviour {
         }
         if(Input.GetKeyDown(KeyCode.E)){
             updateEField();
+        }
+        if(Input.GetKeyDown(KeyCode.P)){
+            HFields[(int)resolution-1].Position = new Vector3(1,1,0);
         }
 
     }
@@ -243,14 +264,19 @@ public class Driver : MonoBehaviour {
         pos = Input.mousePosition;
         pos.x = Mathf.FloorToInt(resolution*(pos.x/r.rect.width));
         pos.y = Mathf.FloorToInt(resolution*(pos.y/r.rect.height));
-        GameObject.Find("InfoText").GetComponent<Text>().text = "Info:\nCoords: "+ pos +
-            "\nColor: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Color+
-            "\nPosition E: " + EFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Position+
-            "\nPosition H: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Position+
-            "\nCoef: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].coef;
-
+        selectedCell = pos;
             //"\nCurl: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Curl;
 
+    }
+    void printStats(){
+        if(selectedCell!=null){
+            Vector2 pos = selectedCell;
+            GameObject.Find("InfoText").GetComponent<Text>().text = "Info:\nCoords: "+ pos +
+                "\nColor: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Color+
+                "\nPosition E: " + EFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Position+
+                "\nPosition H: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Position+
+                "\nCoef: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].coef;
+        }
     }
 
 }
