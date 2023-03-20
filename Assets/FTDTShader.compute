@@ -1,7 +1,8 @@
 // Each #kernel tells which function to compile; you can have many kernels
 #pragma kernel CSMain
 #define C 299792458
-
+#define UPDATE_H 0
+#define UPDATE_E 1
 
 struct FDTD{
     float3 pos;
@@ -12,14 +13,12 @@ struct FDTD{
 RWStructuredBuffer<FDTD> array;
 
 RWStructuredBuffer<FDTD> HFields;
-RWStructuredBuffer<FDTD> HUpdated;
 
 RWStructuredBuffer<FDTD> EFields;
-RWStructuredBuffer<FDTD> EUpdated;
 
 float time;
 float dist;
-float resolution;
+int resolution;
 int version;
 
 [numthreads(1,1,1)]
@@ -27,60 +26,64 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 {
     FDTD H = HFields[id.x];
     FDTD E = EFields[id.x];
+    dist = dist/10;
+    float CEx, CEy, CEz = 0;
+    float CHx, CHy, CHz = 0;
 
-    float CEx, CEy, CEz;
-    float CHx, CHy, CHz;
+    int xPos = id.x%resolution;
+    int yPos = (int)floor((float)id.x/(float)resolution);
 
     //HFIELD
-    if(version < 1){
+    if(version == UPDATE_H){
         //////////////////////////////////////////////////////
         // E MODE
         //CEx
-        if(floor(id.x/resolution)<resolution-1) CEx = (EFields[id.x+resolution].pos.z-E.pos.z)/dist;
-        else CEx = (0-EFields[id.x+(((resolution-1) - floor(id.x/resolution))*resolution)].pos.z)/dist;
-        //CEy
-        if((id.x+1)%resolution==0) CEy = -(0-E.pos.z)/dist;
-        else CEy = -(EFields[id.x+1].pos.z-E.pos.z)/dist;
+        //Main
+        if(yPos < resolution-1) CEx = (EFields[id.x+resolution].pos.z-EFields[id.x].pos.z)/dist;
+        //Edge case
+        else CEx = (0-EFields[xPos+(yPos*resolution)].pos.z)/dist;
 
+        //CEy
+        //Edge Case
+        if(xPos < resolution-1) CEy = (EFields[(xPos+1)+(yPos*resolution)].pos.z-EFields[id.x].pos.z)/dist;
+        //Main
+        else CEy = -(0-E.pos.z)/dist;
 
         H.pos.x = H.pos.x + (-(C*time)/H.coef) * CEx;
-        H.pos.y = H.pos.y + ((C*time)/H.coef) * CEy;
-        // H.pos.x = (-(C*time)/H.coef) * CEx;
-        // H.pos.y = ((C*time)/H.coef) * CEy;
+        H.pos.y = H.pos.y + (-(C*time)/H.coef) * CEy;
 
-
+        HFields[id.x] = H;
     }
 
     //EFIELD
-    if(version > 0){
+    if(version == UPDATE_E){
         //////// E MODE ///////////////////////////////////////////////
         bool xOn, yOn = false;
 
-        if((id.x+1)%resolution==0) xOn = true;
-        if(floor(id.x/resolution)==resolution-1) yOn = true;
+        if(xPos==0) xOn = true;
+        if(yPos==0) yOn = true;
 
+        //x & y > 0
         if(!xOn && !yOn){
-            CHz = ((H.pos.y-HFields[id.x-1].pos.x)/dist)-((H.pos.y-HFields[id.x-resolution].pos.y)/dist);
+            CHz = ((H.pos.y-HFields[id.x-1].pos.y)/dist)-((H.pos.x-HFields[xPos+((yPos-1)*resolution)].pos.x)/dist);
         }
+        // x = 0
         else if(xOn && !yOn){
-            CHz = ((H.pos.y-0)/dist)-((H.pos.y-HFields[id.x-resolution].pos.y)/dist);
+            CHz = ((HFields[yPos*resolution].pos.y-0)/dist)-((HFields[yPos*resolution].pos.x-HFields[(yPos-1)*resolution].pos.x)/dist);
         }
+        // y = 0
         else if(!xOn && yOn){
-            CHz = ((H.pos.y-HFields[id.x-1].pos.x)/dist)-((H.pos.y-0)/dist);
+            CHz = ((HFields[xPos].pos.y-HFields[xPos-1].pos.y)/dist)-((HFields[xPos].pos.x-0)/dist);
         }
+        // x & y = 0
         else if(xOn && yOn){
-            CHz = ((H.pos.y-0)/dist)-((H.pos.y-0)/dist);
+            CHz = ((HFields[0].pos.y-0)/dist)-((HFields[0].pos.x-0)/dist);
         }
 
         float Dz = (E.coef*E.pos.z) + (C*time*CHz);
         E.pos.z = (1/E.coef)*(Dz);
+        EFields[id.x] = E;
     }
-
-    // H.color = float4(clamp(H.pos,0,1),1);
-    // E.color = float4(clamp(E.pos,0,1),1);
-
-    HUpdated[id.x] = H;
-    EUpdated[id.x] = E;
 
 
 }
