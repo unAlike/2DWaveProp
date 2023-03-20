@@ -118,7 +118,7 @@ public class Driver : MonoBehaviour {
             updateEField();
         }
         ComputeBuffer col = new ComputeBuffer(HFields.Length,sizeof(float)*8);
-        col.SetData(EFields);
+        col.SetData(HFields);
         SimCompute.SetBuffer(0, "cells", col);
         SimCompute.SetTexture(0,"Result",render);
         SimCompute.SetFloat("resolution", resolution);

@@ -21,14 +21,21 @@ float time;
 float dist;
 float resolution;
 int version;
+float CEx[50][50], CEy[50][50], CEz[50][50];
 
 [numthreads(1,1,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
+    for(int x = 0; x < resolution; x++){
+        for(int y = 0; y < resolution-1; y++){
+            CEx[x][y] = 0;
+            CEy[x][y] = 0;
+            CEz[x][y] = 0;
+        }
+    }
     FDTD H = HFields[id.x];
     FDTD E = EFields[id.x];
 
-    float CEx, CEy, CEz;
     float CHx, CHy, CHz;
 
     //HFIELD
@@ -36,15 +43,22 @@ void CSMain (uint3 id : SV_DispatchThreadID)
         //////////////////////////////////////////////////////
         // E MODE
         //CEx
-        if(floor(id.x/resolution)<resolution-1) CEx = (EFields[id.x+resolution].pos.z-E.pos.z)/dist;
-        else CEx = (0-EFields[id.x+(((resolution-1) - floor(id.x/resolution))*resolution)].pos.z)/dist;
+        for(int x = 0; x < resolution; x++){
+            for(int y = 0; y < resolution-1; y++){
+                CEx[x][y] = (EFields[x+((y+1)*resolution)].pos.z-EFields[x+(y*resolution)].pos.z)/dist;
+            }
+            CEx[x][y] = (0-EFields[x+(y*resolution)].pos.z)/dist;
+        }
         //CEy
-        if((id.x+1)%resolution==0) CEy = -(0-E.pos.z)/dist;
-        else CEy = -(EFields[id.x+1].pos.z-E.pos.z)/dist;
+        for(int y = 0; y < resolution; y++){
+            for(int x = 0; x < resolution-1; x++){
+                CEy[x][y] = -(EFields[(x+1)+(y*resolution)].pos.z-EFields[x+(y*resolution)].pos.z)/dist;
+            }
+            CEy[x][y] = -(0-EFields[x+(y*resolution)].pos.z)/dist;
+        }
 
-
-        H.pos.x = H.pos.x + (-(C*time)/H.coef) * CEx;
-        H.pos.y = H.pos.y + ((C*time)/H.coef) * CEy;
+        H.pos.x = H.pos.x + (-(C*time)/H.coef) * CEx[x][y];
+        H.pos.y = H.pos.y + ((C*time)/H.coef) * CEy[x][y];
         // H.pos.x = (-(C*time)/H.coef) * CEx;
         // H.pos.y = ((C*time)/H.coef) * CEy;
 
