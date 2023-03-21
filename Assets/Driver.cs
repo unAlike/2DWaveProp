@@ -26,7 +26,7 @@ public class Driver : MonoBehaviour {
 
     Vector2 selectedCell = new Vector2(0,0);
     void Start() {
-        add =0;
+        add = 0;
         C = 299792458;
         print(C);
         time = 0;
@@ -35,7 +35,7 @@ public class Driver : MonoBehaviour {
         Mh = C*timeStep/(1+u);
         Me = C*timeStep/(1-e);
         TProp = Mh*NUM_FDTD*timeStep/C;
-        dist = 1f;
+        dist = .001f;
 //        GameObject.Find("Distance").GetComponent<Text>().text = "" + NUM_FDTD*dist;
         setupCells();
         if(timeStep<(1/C*Mathf.Sqrt(1/dist))){
@@ -56,35 +56,22 @@ public class Driver : MonoBehaviour {
         EFields = new FDTD[NUM_FDTD];
         HFields = new FDTD[NUM_FDTD];
 
-        //test
-        test = new FDTD[Width,Height];
-        for(int x=0; x< Width; x++){
-            for(int y=0; y< Height; y++){
-                FDTD h = new FDTD();
-                h.Position = new Vector3(0,0,0);
-                //HFields[i].Curl = new Vector3(0,0,0);
-                h.Color = Random.ColorHSV();
-                h.coef = .1f;
-                test[x,y] = h;
-            }
-        }
-
         for(int i=0; i< NUM_FDTD; i++){
             //Create 600 FDTD cells
             FDTD h = new FDTD();
-            FDTD e = new FDTD();
+            FDTD ef = new FDTD();
             HFields[i] = h;
-            EFields[i] = e;
+            EFields[i] = ef;
 
             HFields[i].Position = new Vector3(0,0,0);
             //HFields[i].Curl = new Vector3(0,0,0);
             HFields[i].Color = Random.ColorHSV();
-            HFields[i].coef = 1f;
+            HFields[i].coef = u;
 
             EFields[i].Position = new Vector3(0,0,0);
             //EFields[i].Curl = new Vector3(0,0,0);
             EFields[i].Color = Random.ColorHSV();
-            EFields[i].coef = 1f;
+            EFields[i].coef = e;
         }
         selectedCell = new Vector2(1,1);
 
@@ -114,9 +101,10 @@ public class Driver : MonoBehaviour {
             counter++;
             time = (float)counter*(float)timeStep;
             //Update H from E
-            updateHField();
+            
+            if(counter%2==0)updateHField();
             //Update E From H
-            updateEField();
+            else updateEField();
         }
         
         ComputeBuffer col = new ComputeBuffer(HFields.Length,sizeof(float)*8);
@@ -228,7 +216,7 @@ public class Driver : MonoBehaviour {
             updateEField();
         }
         if(Input.GetKeyDown(KeyCode.P)){
-            EFields[25+(25*Height)].Position = new Vector3(0,0,1);
+            HFields[25+(25*Height)].Position = new Vector3(1,1,0);
         }
         if(Input.GetKeyDown(KeyCode.Comma)){
             view = 0;

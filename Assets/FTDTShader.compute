@@ -27,41 +27,51 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     FDTD H = HFields[id.x];
     FDTD E = EFields[id.x];
     dist = dist/10;
-    float CEx, CEy, CEz = 0;
-    float CHx, CHy, CHz = 0;
+    float CEx, CEy, CEz, CHz = 0;
 
     int xPos = id.x%resolution;
     int yPos = (int)floor((float)id.x/(float)resolution);
 
     //HFIELD
-    if(version == UPDATE_H){
+    if(version < 1){
         //////////////////////////////////////////////////////
         // E MODE
-        //CEx
-        //Main
-        if(yPos < resolution-1) CEx = (EFields[id.x+resolution].pos.z-EFields[id.x].pos.z)/dist;
-        //Edge case
-        else CEx = (0-EFields[xPos+(yPos*resolution)].pos.z)/dist;
 
-        //CEy
-        //Edge Case
-        if(xPos < resolution-1) CEy = (EFields[(xPos+1)+(yPos*resolution)].pos.z-EFields[id.x].pos.z)/dist;
-        //Main
-        else CEy = -(0-E.pos.z)/dist;
+        // CEx
+        if(yPos >= resolution-1) {
+            CEx = (0 - EFields[xPos+((resolution-1)*resolution)].pos.z)/dist;
+            //H.pos.z = 0;
+        }
+        else {
+            CEx = (EFields[id.x+resolution].pos.z-EFields[id.x].pos.z)/dist;
+            //H.pos.z = 1;
+        }
 
+        // CEy
+        if(xPos >= resolution-1){
+            CEy = -(0-EFields[xPos+(yPos*resolution)].pos.z)/dist;
+            //H.pos.y = 0;
+        }
+        else{
+            CEy = -(EFields[(xPos+1)+(yPos*resolution)].pos.z-EFields[xPos+(yPos*resolution)].pos.z)/dist;
+            //H.pos.z = 1;
+        }
+        
+        /////////////////////////////////////////////////////////////////
         H.pos.x = H.pos.x + (-(C*time)/H.coef) * CEx;
-        H.pos.y = H.pos.y + (-(C*time)/H.coef) * CEy;
+        H.pos.y = H.pos.y + ((C*time)/H.coef) * CEy;
+        
 
         HFields[id.x] = H;
     }
 
     //EFIELD
-    if(version == UPDATE_E){
+    if(version > 0){
         //////// E MODE ///////////////////////////////////////////////
-        bool xOn, yOn = false;
+        bool xOn, yOn = true;
 
-        if(xPos==0) xOn = true;
-        if(yPos==0) yOn = true;
+        if(xPos!=0) xOn = false;
+        if(yPos!=0) yOn = false;
 
         //x & y > 0
         if(!xOn && !yOn){
@@ -80,7 +90,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
             CHz = ((HFields[0].pos.y-0)/dist)-((HFields[0].pos.x-0)/dist);
         }
 
-        float Dz = (E.coef*E.pos.z) + (C*time*CHz);
+        float Dz = (E.coef*E.pos.z) + (C*time) * CHz;
         E.pos.z = (1/E.coef)*(Dz);
         EFields[id.x] = E;
     }
