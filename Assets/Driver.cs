@@ -11,7 +11,7 @@ public class Driver : MonoBehaviour {
     FDTD[,] test;
     public ComputeShader SimCompute, CellsCompute;
     public RenderTexture render;
-
+    public int EBrightness, HBrightness = 100;
     int Width, Height = 10;
 
     int NUM_FDTD = 100;
@@ -117,6 +117,8 @@ public class Driver : MonoBehaviour {
         SimCompute.SetBuffer(0, "E", Ef);
         SimCompute.SetTexture(0,"Result",render);
         SimCompute.SetFloat("resolution", resolution);
+        SimCompute.SetFloat("EBrightness", EBrightness);
+        SimCompute.SetFloat("HBrightness", HBrightness);
         SimCompute.Dispatch(0,render.width,render.height,1);
 
         Hf.Release();
@@ -167,7 +169,11 @@ public class Driver : MonoBehaviour {
         EFieldBuffer.Release();
 
     }
-
+    public void updateBrightness(){
+        HBrightness = (int)GameObject.Find("HBright").GetComponent<Slider>().value;
+        EBrightness = (int)GameObject.Find("EBright").GetComponent<Slider>().value;
+        
+    }
 
     public void AddDevice(){
         // TODO

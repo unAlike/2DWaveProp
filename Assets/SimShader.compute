@@ -13,6 +13,7 @@ RWStructuredBuffer<FDTD> E;
 RWTexture2D<float4> Result;
 float resolution;
 float time;
+float EBrightness, HBrightness;
 
 
 [numthreads(1,1,1)]
@@ -25,6 +26,6 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     float3 normalE = normalize(E[id.x].pos);
 
 
-    Result[id.xy] =  float4(E[xPos+(yPos*resolution)].pos,1);
+    Result[id.xy] =  float4(H[xPos+(yPos*resolution)].pos*(HBrightness/100),1) + float4(E[xPos+(yPos*resolution)].pos*(EBrightness/100),1);
 
 }
