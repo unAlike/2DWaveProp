@@ -26,7 +26,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 {
     FDTD H = HFields[id.x];
     FDTD E = EFields[id.x];
-    dist = dist/10;
+    dist = dist;
     float CEx, CEy, CEz, CHz = 0;
 
     int xPos = id.x%resolution;
@@ -43,17 +43,17 @@ void CSMain (uint3 id : SV_DispatchThreadID)
             //H.pos.z = 0;
         }
         else {
-            CEx = (EFields[id.x+resolution].pos.z-EFields[id.x].pos.z)/dist;
+            CEx = (EFields[xPos+((yPos+1)*resolution)].pos.z-EFields[xPos+(yPos*resolution)].pos.z)/dist;
             //H.pos.z = 1;
         }
 
         // CEy
         if(xPos >= resolution-1){
-            CEy = -(0-EFields[xPos+(yPos*resolution)].pos.z)/dist;
+            CEy = (0-EFields[xPos+(yPos*resolution)].pos.z)/dist;
             //H.pos.y = 0;
         }
         else{
-            CEy = -(EFields[(xPos+1)+(yPos*resolution)].pos.z-EFields[xPos+(yPos*resolution)].pos.z)/dist;
+            CEy = (EFields[(xPos+1)+(yPos*resolution)].pos.z-EFields[xPos+(yPos*resolution)].pos.z)/dist;
             //H.pos.z = 1;
         }
         
@@ -62,7 +62,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
         H.pos.y = H.pos.y + ((C*time)/H.coef) * CEy;
         
 
-        HFields[id.x] = H;
+        HFields[xPos+(yPos*resolution)] = H;
     }
 
     //EFIELD
@@ -75,7 +75,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 
         //x & y > 0
         if(!xOn && !yOn){
-            CHz = ((H.pos.y-HFields[id.x-1].pos.y)/dist)-((H.pos.x-HFields[xPos+((yPos-1)*resolution)].pos.x)/dist);
+            CHz = ((HFields[xPos+(yPos*resolution)].pos.y-HFields[(xPos+(yPos*resolution))-1].pos.y)/dist)-((HFields[xPos+(yPos*resolution)].pos.x-HFields[xPos+((yPos-1)*resolution)].pos.x)/dist);
         }
         // x = 0
         else if(xOn && !yOn){
@@ -90,10 +90,9 @@ void CSMain (uint3 id : SV_DispatchThreadID)
             CHz = ((HFields[0].pos.y-0)/dist)-((HFields[0].pos.x-0)/dist);
         }
 
-        float Dz = (E.coef*E.pos.z) + (C*time) * CHz;
-        E.pos.z = (1/E.coef)*(Dz);
-        EFields[id.x] = E;
+        float Dz = ((EFields[xPos+(yPos*resolution)].coef) * EFields[xPos+(yPos*resolution)].pos.z) + ((C*time) * CHz);
+        E.pos.z = (1/EFields[xPos+(yPos*resolution)].coef)*(Dz);
+        EFields[xPos+(yPos*resolution)] = E;
     }
-
 
 }

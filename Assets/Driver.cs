@@ -30,12 +30,12 @@ public class Driver : MonoBehaviour {
         C = 299792458;
         print(C);
         time = 0;
-        timeStep = Mathf.Pow(1*10,-10);
+        //timeStep = Mathf.Pow(1*10,-10);
         
         Mh = C*timeStep/(1+u);
         Me = C*timeStep/(1-e);
         TProp = Mh*NUM_FDTD*timeStep/C;
-        dist = .001f;
+        
 //        GameObject.Find("Distance").GetComponent<Text>().text = "" + NUM_FDTD*dist;
         setupCells();
         if(timeStep<(1/C*Mathf.Sqrt(1/dist))){
@@ -107,15 +107,20 @@ public class Driver : MonoBehaviour {
             else updateEField();
         }
         
-        ComputeBuffer col = new ComputeBuffer(HFields.Length,sizeof(float)*8);
-        if(view == 0) col.SetData(HFields);
-        else col.SetData(EFields);
-        SimCompute.SetBuffer(0, "cells", col);
+        ComputeBuffer Hf = new ComputeBuffer(HFields.Length,sizeof(float)*8);
+        ComputeBuffer Ef = new ComputeBuffer(EFields.Length,sizeof(float)*8);
+        
+        Hf.SetData(HFields);
+        Ef.SetData(EFields);
+
+        SimCompute.SetBuffer(0, "H", Hf);
+        SimCompute.SetBuffer(0, "E", Ef);
         SimCompute.SetTexture(0,"Result",render);
         SimCompute.SetFloat("resolution", resolution);
         SimCompute.Dispatch(0,render.width,render.height,1);
 
-        col.Release();
+        Hf.Release();
+        Ef.Release();
 
         Graphics.Blit(GameObject.Find("SimWindow").GetComponent<RawImage>().texture, render);
     }
@@ -216,8 +221,14 @@ public class Driver : MonoBehaviour {
             updateEField();
         }
         if(Input.GetKeyDown(KeyCode.P)){
-            HFields[25+(25*Height)].Position = new Vector3(1,1,0);
+            EFields[25+(25*Height)].Position = new Vector3(0,0,10);
         }
+        if(Input.GetKeyDown(KeyCode.J)){
+            for(int x=25; x<75; x++){
+                EFields[x].Position = new Vector3(0,0,10);
+            }
+        }
+
         if(Input.GetKeyDown(KeyCode.Comma)){
             view = 0;
         }
@@ -253,7 +264,8 @@ public class Driver : MonoBehaviour {
                 "\nColor: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Color+
                 "\nE: " + EFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Position+
                 "\nH: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Position+
-                "\nCoef: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].coef;
+                "\nε: " + EFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].coef+
+                "\nμ: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].coef;
         }
     }
 

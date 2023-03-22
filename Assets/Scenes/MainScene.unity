@@ -1484,15 +1484,15 @@ MonoBehaviour:
   SimCompute: {fileID: 7200000, guid: f264039c0ac408645a31ad0a6ff0a668, type: 3}
   CellsCompute: {fileID: 7200000, guid: 40ca4553e4fdb45469f95f3a44066512, type: 3}
   render: {fileID: 8400000, guid: 28fe384c87094df429f5ef7de81fda33, type: 2}
-  resolution: 50
-  timeStep: 0
+  resolution: 100
+  timeStep: 0.000000002
   C: 0
   u: 1.001
-  e: -1.001
+  e: 0.9999
   Mh: 0
   Me: 0
   time: 0
   TProp: 0
-  dist: 0
+  dist: 1
   add: 0
   shouldUpdate: 1

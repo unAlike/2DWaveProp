@@ -8,7 +8,8 @@ struct FDTD{
     float coef;
 };
 
-RWStructuredBuffer<FDTD> cells;
+RWStructuredBuffer<FDTD> H;
+RWStructuredBuffer<FDTD> E;
 RWTexture2D<float4> Result;
 float resolution;
 float time;
@@ -19,10 +20,11 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 {
     int xPos = floor(id.x);
     int yPos = floor(id.y);
-    
-    FDTD cell = cells[id.x];
-    cells[id.x] = cell;
 
-    Result[id.xy] =  float4(cells[(xPos)+(yPos*resolution)].pos,1);
+    float3 normalH = normalize(H[id.x].pos);
+    float3 normalE = normalize(E[id.x].pos);
+
+
+    Result[id.xy] =  float4(E[xPos+(yPos*resolution)].pos,1);
 
 }
