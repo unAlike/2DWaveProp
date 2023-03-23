@@ -27,5 +27,5 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 
 
     Result[id.xy] =  float4(H[xPos+(yPos*resolution)].pos*(HBrightness/100),1) + float4(E[xPos+(yPos*resolution)].pos*(EBrightness/100),1);
-
+    //Result[id.xy] = float4(E[xPos+yPos*resolution].pos.z*(EBrightness/100),-E[xPos+yPos*resolution].pos.z*(EBrightness/100),0,1);
 }

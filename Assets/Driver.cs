@@ -26,6 +26,8 @@ public class Driver : MonoBehaviour {
 
     Vector2 selectedCell = new Vector2(0,0);
     void Start() {
+        GameObject.Find("HBright").GetComponent<Slider>().value = HBrightness;
+        GameObject.Find("EBright").GetComponent<Slider>().value = EBrightness;
         add = 0;
         C = 299792458;
         print(C);
@@ -226,13 +228,8 @@ public class Driver : MonoBehaviour {
         if(Input.GetKeyDown(KeyCode.E)){
             updateEField();
         }
-        if(Input.GetKeyDown(KeyCode.P)){
-            EFields[25+(25*Height)].Position = new Vector3(0,0,10);
-        }
-        if(Input.GetKeyDown(KeyCode.J)){
-            for(int x=25; x<75; x++){
-                EFields[x].Position = new Vector3(0,0,10);
-            }
+        if(Input.GetKey(KeyCode.P)){
+            EFields[Width/2+((int)resolution*(Height/2))].Position += new Vector3(0,0,.1f);
         }
 
         if(Input.GetKeyDown(KeyCode.Comma)){
@@ -250,7 +247,7 @@ public class Driver : MonoBehaviour {
         pos = Input.mousePosition;
         pos.x = Mathf.FloorToInt(resolution*(pos.x/r.rect.width)-1);
         pos.y = Mathf.FloorToInt(resolution*(pos.y/r.rect.height)-1);
-        if(pos.x < resolution) HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Color = Color.red;
+        if(pos.x < resolution && pos.y<resolution) EFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Position += new Vector3(0,0,10);
     }
 
     public void onHover(){
