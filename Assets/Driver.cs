@@ -212,7 +212,10 @@ public class Driver : MonoBehaviour {
             }
         }
         if(Input.GetKeyDown(KeyCode.B)){
-            for(int i =0; i<HFields.Length;i++){
+            for(int i =(int)resolution/4; i<3*resolution/4;i++){
+                for(int j = (int)resolution/4; j<3 * resolution/4; j++){
+                    HFields[i+(int)(j*resolution)].coef = 7;
+                }
                 HFields[i].Color = Color.black;
             }
         }

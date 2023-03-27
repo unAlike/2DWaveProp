@@ -75,7 +75,9 @@ void CSMain (uint3 id : SV_DispatchThreadID)
 
         //x & y > 0
         if(!xOn && !yOn){
-            CHz = ((HFields[xPos+(yPos*resolution)].pos.y-HFields[(xPos+(yPos*resolution))-1].pos.y)/dist)-((HFields[xPos+(yPos*resolution)].pos.x-HFields[xPos+((yPos-1)*resolution)].pos.x)/dist);
+            if(xPos!=resolution-1){
+                CHz = ((HFields[xPos+(yPos*resolution)].pos.y-HFields[(xPos+(yPos*resolution))-1].pos.y)/dist)-((HFields[xPos+(yPos*resolution)].pos.x-HFields[xPos+((yPos-1)*resolution)].pos.x)/dist);
+            }
         }
         // x = 0
         else if(xOn && !yOn){
@@ -83,7 +85,9 @@ void CSMain (uint3 id : SV_DispatchThreadID)
         }
         // y = 0
         else if(!xOn && yOn){
-            CHz = ((HFields[xPos].pos.y-HFields[xPos-1].pos.y)/dist)-((HFields[xPos].pos.x-0)/dist);
+            if(xPos!=resolution-1){
+                CHz = ((HFields[xPos].pos.y-HFields[xPos-1].pos.y)/dist)-((HFields[xPos].pos.x-0)/dist);
+            }
         }
         // x & y = 0
         else if(xOn && yOn){
