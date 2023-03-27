@@ -8,148 +8,177 @@ public class Driver : MonoBehaviour {
     LineRenderer Hline, Eline;
     FDTD[] HFields, EFields;
 
-    public int Width, Height = 10;
+    FDTD[,] test;
+    public ComputeShader SimCompute, CellsCompute;
+    public RenderTexture render;
+    public int EBrightness, HBrightness = 100;
+    int Width, Height = 10;
 
     int NUM_FDTD = 100;
-
+    Image[] imgs;
     int counter;
+    int view = 0;
+    public float resolution;
     public float timeStep, C, u, e, Mh, Me, time, TProp, dist, add;
 
     float E3, E2, E1, H3, H2, H1 = 0;
     public bool shouldUpdate = true;
+
+    Vector2 selectedCell = new Vector2(0,0);
     void Start() {
-        NUM_FDTD = Width*Height;
-        add =0;
-        EFields = new FDTD[NUM_FDTD];
-        HFields = new FDTD[NUM_FDTD];
-        
+        GameObject.Find("HBright").GetComponent<Slider>().value = HBrightness;
+        GameObject.Find("EBright").GetComponent<Slider>().value = EBrightness;
+        add = 0;
+        C = 299792458;
         print(C);
         time = 0;
-        timeStep = Mathf.Pow(1*10,-10);
+        //timeStep = Mathf.Pow(1*10,-10);
         
         Mh = C*timeStep/(1+u);
         Me = C*timeStep/(1-e);
         TProp = Mh*NUM_FDTD*timeStep/C;
-        dist = 1f;
+        
 //        GameObject.Find("Distance").GetComponent<Text>().text = "" + NUM_FDTD*dist;
-
-        for(int i=0; i< NUM_FDTD; i++){
-            //Create 600 FDTD cells
-            FDTD h = new FDTD();
-            FDTD e = new FDTD();
-            HFields[i] = h;
-            EFields[i] = e;
-            //Coef
-            // HFields[i].coef = Mh;
-            // EFields[i].coef = Me;
-            // HFields[i].coef = 1;
-            // EFields[i].coef = 1;
-        }
-        for(int i=300; i< NUM_FDTD; i++){
-            //Coef
-            //HFields[i].coef = .1f;
-            //EFields[i].coef = .5f;
-        }
+        setupCells();
         if(timeStep<(1/C*Mathf.Sqrt(1/dist))){
             print("T is good");
         }
         else{
             print("T too high. Should be < "+ (1/C*Mathf.Sqrt(1/dist)));
         }
-
         print("TPROP: " + TProp);
         print("DistStep: " + dist);
         print("TimeStep: " + timeStep);
         setupGrid();
     }
+    public void setupCells(){
+        Width = (int)resolution;
+        Height = (int)resolution;
+        NUM_FDTD = Width*Height;
+        EFields = new FDTD[NUM_FDTD];
+        HFields = new FDTD[NUM_FDTD];
 
-    public void setupGrid() {
-        GameObject grid = GameObject.Find("GridCanvas");
-        float imgsizex = grid.GetComponent<RectTransform>().rect.width / Width;
-        float imgsizey = grid.GetComponent<RectTransform>().rect.height / Height;
-        for(int y = 0; y<Height; y++){
-            for(int x=0; x<Width; x++){
-                GameObject tile = new GameObject();
-                Image NewImage = tile.AddComponent<Image>();
-                tile.transform.SetParent(grid.transform);
-                tile.SetActive(true);
-                tile.GetComponent<RectTransform>().localPosition = new Vector3((imgsizex/2)+x*imgsizex,(-imgsizey/2)-(y*imgsizey),0);
-                //Vector3 an = 
-                tile.GetComponent<RectTransform>().anchorMin = new Vector2(0,1);
-                tile.GetComponent<RectTransform>().anchorMax = new Vector2(0,1);
-                tile.GetComponent<RectTransform>().localScale = new Vector3(1,1,1);
-                RectTransform r = tile.GetComponent<RectTransform>();
-                r.sizeDelta = new Vector2(imgsizex,imgsizey);
-                NewImage.color = Random.ColorHSV();
-            }
+        for(int i=0; i< NUM_FDTD; i++){
+            //Create 600 FDTD cells
+            FDTD h = new FDTD();
+            FDTD ef = new FDTD();
+            HFields[i] = h;
+            EFields[i] = ef;
+
+            HFields[i].Position = new Vector3(0,0,0);
+            //HFields[i].Curl = new Vector3(0,0,0);
+            HFields[i].Color = Random.ColorHSV();
+            HFields[i].coef = u;
+
+            EFields[i].Position = new Vector3(0,0,0);
+            //EFields[i].Curl = new Vector3(0,0,0);
+            EFields[i].Color = Random.ColorHSV();
+            EFields[i].coef = e;
         }
-        // for(int i = 0; i<NUM_FDTD; i++){
-        //     HFields[i].Position = Vector3.zero;
-        //     EFields[i].Position = Vector3.zero;
-        //     Hline.SetPosition(i,(new Vector3((-Screen.width/2)+Screen.width * (i+1)/NUM_FDTD,0,-0.01f)));
-        //     Eline.SetPosition(i,(new Vector3((-Screen.width/2)+Screen.width * (i+1)/NUM_FDTD,0,-0.01f)));
-        // }
-        //Reset Boundry
-        H3=0; H2=0; H1=0; E3=0; E2=0; E1 = 0;
-    }
-    // Update is called once per frame
-    // void Update() {
-    // }
+        selectedCell = new Vector2(1,1);
 
+    }
+    public void setupGrid() {
+
+        GameObject grid = GameObject.Find("GridCanvas");
+        RectTransform ImgRect = GameObject.Find("SimWindow").GetComponent<RectTransform>();
+        render = new RenderTexture(Width,Height,1);
+        render.enableRandomWrite = true;
+        render.filterMode = FilterMode.Point;
+        render.Create();
+        GameObject.Find("SimWindow").GetComponent<RawImage>().texture = render;
+        changeColor();
+    }
+
+    void Update(){
+        debug();
+        if(HFields==null || EFields==null){
+            setupCells();
+        }
+    }
     void FixedUpdate(){
+        printStats();
         add/=1.5f;
         if(shouldUpdate){
             counter++;
             time = (float)counter*(float)timeStep;
             //Update H from E
-            //updateHField();
+            
+            if(counter%2==0)updateHField();
             //Update E From H
-            //updateEField();
-            //EFields[0].Position.y = add;
-            debug();
-
+            else updateEField();
         }
+        
+        ComputeBuffer Hf = new ComputeBuffer(HFields.Length,sizeof(float)*8);
+        ComputeBuffer Ef = new ComputeBuffer(EFields.Length,sizeof(float)*8);
+        
+        Hf.SetData(HFields);
+        Ef.SetData(EFields);
+
+        SimCompute.SetBuffer(0, "H", Hf);
+        SimCompute.SetBuffer(0, "E", Ef);
+        SimCompute.SetTexture(0,"Result",render);
+        SimCompute.SetFloat("resolution", resolution);
+        SimCompute.SetFloat("EBrightness", EBrightness);
+        SimCompute.SetFloat("HBrightness", HBrightness);
+        SimCompute.Dispatch(0,render.width,render.height,1);
+
+        Hf.Release();
+        Ef.Release();
+
+        Graphics.Blit(GameObject.Find("SimWindow").GetComponent<RawImage>().texture, render);
     }
 
 
     void updateHField(){
-        for(int i=0; i<NUM_FDTD-1;i++){
-            // Update Equation for Every HField
-            HFields[i].Position.x = HFields[i].Position.x + (HFields[i].coef * ((EFields[i+1].Position.y - EFields[i].Position.y))/dist);
+        ComputeBuffer HFieldBuffer = new ComputeBuffer(HFields.Length,sizeof(float)*8);
+        ComputeBuffer EFieldBuffer = new ComputeBuffer(EFields.Length, sizeof(float)*8);
 
-            Vector3 pos = Hline.GetPosition(i);
-            pos.y = HFields[i].Position.x;
-            Hline.SetPosition(i,pos);
-        }
-        HFields[NUM_FDTD-1].Position.x += (HFields[NUM_FDTD-1].coef * (E3 - EFields[NUM_FDTD-1].Position.y));
-        H3=H2; H2=H1; H1=HFields[0].Position.x;
+        HFieldBuffer.SetData(HFields);
+        EFieldBuffer.SetData(EFields);
 
+        CellsCompute.SetBuffer(0,"HFields",HFieldBuffer);
+        CellsCompute.SetBuffer(0,"EFields", EFieldBuffer);
+
+        CellsCompute.SetFloat("dist", dist);
+        CellsCompute.SetInt("version", 0);
+        CellsCompute.SetInt("resolution", Width);
+        CellsCompute.SetFloat("time", timeStep);
+
+        CellsCompute.Dispatch(0,HFields.Length,1,1);
+        
+        HFieldBuffer.GetData(HFields);
+
+        HFieldBuffer.Release();
+        EFieldBuffer.Release();
     }
     void updateEField(){
-        EFields[0].Position.y += EFields[0].coef * (HFields[0].Position.y - E3);
-        for(int i=1; i<NUM_FDTD-1; i++){   
-            //Update Equation for Every EField
-            EFields[i].Position.y = EFields[i].Position.y + (EFields[i].coef * (HFields[i].Position.x - HFields[i-1].Position.x)/dist);
-            Vector3 pos = Eline.GetPosition(i);
-            pos.y = EFields[i].Position.y;
-            Eline.SetPosition(i,pos);
-        }
-        E3=E2;E2=E1;E1=EFields[NUM_FDTD-1].Position.y;
+        ComputeBuffer HFieldBuffer = new ComputeBuffer(HFields.Length,sizeof(float)*8);
+        ComputeBuffer EFieldBuffer = new ComputeBuffer(EFields.Length, sizeof(float)*8);
+        HFieldBuffer.SetData(HFields);
+        EFieldBuffer.SetData(EFields);
+        CellsCompute.SetBuffer(0,"HFields",HFieldBuffer);
+        CellsCompute.SetBuffer(0,"EFields", EFieldBuffer);
+        CellsCompute.SetFloat("dist", dist);
+        CellsCompute.SetInt("version", 1);
+        CellsCompute.SetInt("resolution", Width);
+        CellsCompute.SetFloat("time", timeStep);
+        CellsCompute.Dispatch(0,EFields.Length,1,1);
+
+        EFieldBuffer.GetData(EFields);
+
+        HFieldBuffer.Release();
+        EFieldBuffer.Release();
+
+    }
+    public void updateBrightness(){
+        HBrightness = (int)GameObject.Find("HBright").GetComponent<Slider>().value;
+        EBrightness = (int)GameObject.Find("EBright").GetComponent<Slider>().value;
+        
     }
 
-
     public void AddDevice(){
-        GameObject go = GameObject.Find("Panel");
-        Rect r = go.GetComponent<Image>().GetPixelAdjustedRect();
-        Color a = go.GetComponent<Image>().color;
-        a.a = .4f;
-        go.GetComponent<Image>().color = a;
-        print(r.xMin + ", "+ r.xMax);
-        for(int i =0; i<NUM_FDTD-1; i++){
-            if(r.xMin < Hline.GetPosition(i).x && Hline.GetPosition(i).x < r.xMax){
-                HFields[i].coef = .2f;
-            }
-        }
+        // TODO
     }
     
     public void setSim(bool r){
@@ -161,20 +190,88 @@ public class Driver : MonoBehaviour {
         else{
             GameObject.Find("StatusText").GetComponent<Text>().text = "Status: Running";
             GameObject.Find("StatusText").GetComponent<Text>().color = Color.green;
+        }
+    }
 
+    void changeColor(){
+        for(int i =0; i<NUM_FDTD; i++){
+            HFields[i].Color = Random.ColorHSV();
         }
     }
 
     void debug(){
         if(Input.GetKey(KeyCode.Q)){
-            //HFields[0].Position.x = 40;
-            add += 50;
+            changeColor();
         }
-        else{
-            
+        if(Input.GetKey(KeyCode.W)){
+            for(int i=0; i<HFields.Length;i++){
+                if(HFields[i].Color != Color.green){ 
+                    HFields[i].Color = Color.green;
+                    break;
+                }
+            }
         }
-        if(Input.GetKeyDown(KeyCode.P)){
-            EFields[10].Position.y = 70;
+        if(Input.GetKeyDown(KeyCode.B)){
+            for(int i =(int)resolution/4; i<3*resolution/4;i++){
+                for(int j = (int)resolution/4; j<3 * resolution/4; j++){
+                    HFields[i+(int)(j*resolution)].coef = 7;
+                }
+                HFields[i].Color = Color.black;
+            }
+        }
+        if(Input.GetKeyDown(KeyCode.M)){
+            for(int i =0; i<HFields.Length;i++){
+                HFields[0].Position = new Vector3(1,1,0);
+            }
+        }
+
+        if(Input.GetKeyDown(KeyCode.H)){
+            updateHField();
+        }
+        if(Input.GetKeyDown(KeyCode.E)){
+            updateEField();
+        }
+        if(Input.GetKey(KeyCode.P)){
+            EFields[Width/2+((int)resolution*(Height/2))].Position += new Vector3(0,0,.1f);
+        }
+
+        if(Input.GetKeyDown(KeyCode.Comma)){
+            view = 0;
+        }
+        if(Input.GetKeyDown(KeyCode.Period)){
+            view = 1;
+        }
+
+    }
+
+    public void UI(){
+        Vector2 pos;
+        RectTransform r = GameObject.Find("SimWindow").GetComponent<RectTransform>();
+        pos = Input.mousePosition;
+        pos.x = Mathf.FloorToInt(resolution*(pos.x/r.rect.width)-1);
+        pos.y = Mathf.FloorToInt(resolution*(pos.y/r.rect.height)-1);
+        if(pos.x < resolution && pos.y<resolution) EFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Position += new Vector3(0,0,10);
+    }
+
+    public void onHover(){
+        Vector2 pos;
+        RectTransform r = GameObject.Find("SimWindow").GetComponent<RectTransform>();
+        pos = Input.mousePosition;
+        pos.x = Mathf.FloorToInt(resolution*(pos.x/r.rect.width));
+        pos.y = Mathf.FloorToInt(resolution*(pos.y/r.rect.height));
+        selectedCell = pos;
+            //"\nCurl: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Curl;
+
+    }
+    void printStats(){
+        if(selectedCell!=null){
+            Vector2 pos = selectedCell;
+            GameObject.Find("InfoText").GetComponent<Text>().text = "Info:\nCoords: "+ pos +
+                "\nColor: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Color+
+                "\nE: " + EFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Position+
+                "\nH: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Position+
+                "\nε: " + EFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].coef+
+                "\nμ: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].coef;
         }
     }
 

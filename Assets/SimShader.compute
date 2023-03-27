@@ -1,0 +1,32 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+struct FDTD{
+    float3 pos;
+    float4 color;
+    float time;
+    float coef;
+};
+
+RWStructuredBuffer<FDTD> H;
+RWStructuredBuffer<FDTD> E;
+RWTexture2D<float4> Result;
+float resolution;
+float time;
+float EBrightness, HBrightness;
+
+
+[numthreads(1,1,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    int xPos = floor(id.x);
+    int yPos = floor(id.y);
+
+    float3 normalH = normalize(H[id.x].pos);
+    float3 normalE = normalize(E[id.x].pos);
+
+    float4 HF = float4(E[xPos+yPos*resolution].pos.z*(EBrightness/100),-E[xPos+yPos*resolution].pos.z*(EBrightness/100),0,1);
+    float4 EF = float4(0,0,(H[xPos+(yPos*resolution)].pos.x+H[xPos+(yPos*resolution)].pos.y)/2,1)*HBrightness/100;
+    //Result[id.xy] =  float4(H[xPos+(yPos*resolution)].pos*(HBrightness/100),1) + float4(E[xPos+(yPos*resolution)].pos*(EBrightness/100),1);
+    Result[id.xy] = HF+EF;
+}
