@@ -200,6 +200,18 @@ public class Driver : MonoBehaviour {
     }
 
     void debug(){
+        if(Input.GetKeyDown(KeyCode.LeftArrow)){
+            selectedCell.x--;
+        }
+        if(Input.GetKeyDown(KeyCode.RightArrow)){
+            selectedCell.x++;
+        }
+        if(Input.GetKeyDown(KeyCode.UpArrow)){
+            selectedCell.y++;
+        }
+        if(Input.GetKeyDown(KeyCode.DownArrow)){
+            selectedCell.y--;
+        }
         if(Input.GetKey(KeyCode.Q)){
             changeColor();
         }
