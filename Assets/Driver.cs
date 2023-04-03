@@ -79,6 +79,34 @@ public class Driver : MonoBehaviour {
             EFields[i].cond = new Vector2(0,0);
             EFields[i].integrated = new Vector3(0,0,0);
         }
+        for(int i=Width-20; i< Width; i++){
+            for(int j=0; j<Height;j++){
+                float sig = (e0*0.5f/timeStep)*Mathf.Pow(((float)(i+1)/(float)Width/2),3);
+                //Hi X and Y
+                HFields[i+(j*(int)resolution)].cond.x = sig;
+                EFields[i+(j*(int)resolution)].cond.x = sig;
+                
+                HFields[(i*(int)resolution)+j].cond.y = sig;
+                EFields[(i*(int)resolution)+j].cond.y = sig;
+
+                HFields[-(i-Width)+(j*(int)resolution)].cond.x = sig;
+                EFields[-(i-Width)+(j*(int)resolution)].cond.x = sig;
+                
+                HFields[(-(i-Width)*(int)resolution)+j].cond.y = sig;
+                EFields[(-(i-Width)*(int)resolution)+j].cond.y = sig;
+            }
+        }
+        // for(int i=10; i>-1; i--){
+        //     for(int j=0; j<Height;j++){
+        //         float sig = (e0*0.5f/timeStep)*Mathf.Pow(((float)(i+1)/(float)Width),3);
+        //         HFields[i+(j*(int)resolution)].cond.x = sig;
+        //         EFields[i+(j*(int)resolution)].cond.x = sig;
+
+        //         HFields[(i*(int)resolution)+j].cond.y = sig;
+        //         EFields[(i*(int)resolution)+j].cond.y = sig;
+        //     }
+        // }
+
         selectedCell = new Vector2(1,1);
         HFields[0].Color = Color.red;
         EFields[0].Color = Color.red;

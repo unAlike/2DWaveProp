@@ -2287,7 +2287,7 @@ MonoBehaviour:
   Me: 0
   time: 0
   TProp: 0
-  dist: 10000000
+  dist: 1
   add: 0
   DO_NOT_EDIT: 0
   u: 0
