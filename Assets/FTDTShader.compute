@@ -2,6 +2,8 @@
 #pragma kernel CSMain
 #define C 299792458
 #define e 8.8542*pow(10,-12)
+#define u 1.25663706f*pow(10,-6);
+
 #define UPDATE_H 0
 #define UPDATE_E 1
 
@@ -12,8 +14,6 @@ struct FDTD{
     float2 cond;
     float3 integrated;
 };
-
-RWStructuredBuffer<FDTD> array;
 
 RWStructuredBuffer<FDTD> HFields;
 
@@ -28,14 +28,13 @@ int steps;
 [numthreads(1,1,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
-    FDTD H = HFields[id.x];
-    FDTD E = EFields[id.x];
-    dist = dist;
     float CEx, CEy, CEz, CHz = 0;
 
-    int xPos = id.x%resolution;
+    int xPos = (int)(float(id.x)%(float)resolution);
     int yPos = (int)floor((float)id.x/(float)resolution);
 
+    FDTD H = HFields[xPos+(yPos*resolution)];
+    FDTD E = EFields[xPos+(yPos*resolution)];
     //HFIELD
     if(version < 1){
         //////////////////////////////////////////////////////
@@ -56,7 +55,8 @@ void CSMain (uint3 id : SV_DispatchThreadID)
         else{
             CEy = -(EFields[(xPos+1)+(yPos*resolution)].pos.z-EFields[xPos+(yPos*resolution)].pos.z)/dist;
         }
-        H.integrated.x = steps * CEx;
+
+        H.integrated.x += CEx;
         float mHx0 = (1/time) + (H.cond.y)/(2*e);
         float mHx1 = 1/mHx0 * ((1/time)-(H.cond.y/(2*e)));
         float mHx2 = -(1/mHx0)*(C/H.coef);
@@ -64,9 +64,9 @@ void CSMain (uint3 id : SV_DispatchThreadID)
         H.pos.x = (mHx1*H.pos.x) + (mHx2 * CEx) + (mHx3 * H.integrated.x);
         //H.pos.x = (mHx1*H.pos.x) + (mHx3 * H.integrated.x);
         /////////////////////////////////////////////////////////////////
-        H.integrated.y = steps * CEy;
+        H.integrated.y +=  CEy;
         float mHy0 = (1/time) + ((H.cond.x)/(2*e));
-        float mHy1 = (1/mHy0)*(((1/time)-H.cond.x)/(2*e));
+        float mHy1 = (1/mHy0) * ((1/time)-((H.cond.x)/(2*e)));
         float mHy2 = -(1/mHy0)*(C/H.coef);
         float mHy3 = -(1/mHy0)*((C*time)/e)*(H.cond.y/H.coef);
         //H.pos.y = (mHy1*H.pos.y) + (mHy2 * CEy) + (mHy3 * H.integrated.y);
@@ -106,12 +106,13 @@ void CSMain (uint3 id : SV_DispatchThreadID)
         }
 
         E.integrated.z = E.integrated.z + (E.pos.z * E.coef);
-        float mDz0 = (1/time)+((E.cond.x+E.cond.y)/(2*e))+((E.cond.x*E.cond.y*time)/(4* pow(e,2)));
-        float mDz1 = (1/mDz0)*((1/time)-(E.cond.x+E.cond.y)/(2*e)-(E.cond.x*E.cond.y*time)/(4* pow(e,2)));
+        float mDz0 = (1/time) + ((E.cond.x+E.cond.y)/(2*e)) + ((E.cond.x*E.cond.y*time)/(4* pow(e,2)));
+        float mDz1 = (1/mDz0) * ((((1/time) - (E.cond.x+E.cond.y))/(2*e)) - ((E.cond.x*E.cond.y*time)/(4* pow(e,2))));
         float mDz2 = C/mDz0;
         float mDz4 = -(1/mDz0)*(time/pow(e,2))*E.cond.x*E.cond.y;
 
         float Dz = (mDz1 * ((E.coef) * E.pos.z)) + (mDz2 * CHz) + (mDz4 * E.integrated.z);
+        Dz = (E.pos.z * E.coef) + (C*time*CHz);
         E.pos.z = (1/EFields[xPos+(yPos*resolution)].coef)*(Dz);
         
         EFields[xPos+(yPos*resolution)] = E;

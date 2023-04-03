@@ -20,7 +20,8 @@ public class Driver : MonoBehaviour {
     int view = 0;
     public float resolution;
     float e0 = 8.85f * Mathf.Pow(10,-12);
-    public float timeStep, C, ur, er, Mh, Me, time, TProp, dist, add;
+    float u0 = Mathf.Pow(1.25663706f,-6);
+    public float timeStep, C, ur, er, Mh, Me, time, TProp, dist, add, DO_NOT_EDIT, u, e;
 
     float E3, E2, E1, H3, H2, H1, H0 = 0;
     public bool shouldUpdate = true;
@@ -51,6 +52,8 @@ public class Driver : MonoBehaviour {
         setupGrid();
     }
     public void setupCells(){
+        e = er*e0;
+        u = ur*u0;
         Width = (int)resolution;
         Height = (int)resolution;
         NUM_FDTD = Width*Height;
@@ -205,7 +208,6 @@ public class Driver : MonoBehaviour {
 
     void debug(){
         if(Input.GetKeyDown(KeyCode.LeftArrow)){
-            
             if(selectedCell.x>0) selectedCell.x--;
         }
         if(Input.GetKeyDown(KeyCode.RightArrow)){
@@ -220,28 +222,6 @@ public class Driver : MonoBehaviour {
         if(Input.GetKey(KeyCode.Q)){
             changeColor();
         }
-        if(Input.GetKey(KeyCode.W)){
-            for(int i=0; i<HFields.Length;i++){
-                if(HFields[i].Color != Color.green){ 
-                    HFields[i].Color = Color.green;
-                    break;
-                }
-            }
-        }
-        if(Input.GetKeyDown(KeyCode.B)){
-            for(int i =(int)resolution/4; i<3*resolution/4;i++){
-                for(int j = (int)resolution/4; j<3 * resolution/4; j++){
-                    HFields[i+(int)(j*resolution)].coef = 7;
-                }
-                HFields[i].Color = Color.black;
-            }
-        }
-        if(Input.GetKeyDown(KeyCode.M)){
-            for(int i =0; i<HFields.Length;i++){
-                HFields[0].Position = new Vector3(1,1,0);
-            }
-        }
-
         if(Input.GetKeyDown(KeyCode.H)){
             updateHField();
         }
@@ -249,9 +229,8 @@ public class Driver : MonoBehaviour {
             updateEField();
         }
         if(Input.GetKey(KeyCode.P)){
-            EFields[Width/2+((int)resolution*(Height/2))].Position += new Vector3(0,0,.1f);
+            EFields[Width/2+((int)resolution*(Height/2))].Position += new Vector3(0,0,1f);
         }
-
         if(Input.GetKeyDown(KeyCode.Comma)){
             view = 0;
         }
