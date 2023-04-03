@@ -2276,10 +2276,10 @@ MonoBehaviour:
   SimCompute: {fileID: 7200000, guid: f264039c0ac408645a31ad0a6ff0a668, type: 3}
   CellsCompute: {fileID: 7200000, guid: 40ca4553e4fdb45469f95f3a44066512, type: 3}
   render: {fileID: 8400000, guid: 28fe384c87094df429f5ef7de81fda33, type: 2}
-  EBrightness: 0
-  HBrightness: 100
+  EBrightness: 50
+  HBrightness: 50
   resolution: 200
-  timeStep: 1.667e-10
+  timeStep: 0.000000001667
   C: 0
   ur: 1
   er: 1

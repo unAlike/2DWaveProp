@@ -4,7 +4,6 @@
 struct FDTD{
     float3 pos;
     float4 color;
-    float time;
     float coef;
     float2 cond;
     float3 integrated;
@@ -26,14 +25,19 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     int xPos = floor(id.x);
     int yPos = floor(id.y);
 
-    float3 normalH = normalize(H[id.x].pos);
-    float3 normalE = normalize(E[id.x].pos);
+
+    float3 normalH = normalize(H[xPos+yPos*resolution].pos);
+    float3 normalE = normalize(E[xPos+(yPos*resolution)].pos);
 
     float4 HF = float4(E[xPos+yPos*resolution].pos.z*(EBrightness/100),-E[xPos+yPos*resolution].pos.z*(EBrightness/100),0,1);
     float4 EF = float4(0,0,(H[xPos+(yPos*resolution)].pos.x+H[xPos+(yPos*resolution)].pos.y)/2,1)*HBrightness/100;
     //Result[id.xy] =  float4(H[xPos+(yPos*resolution)].pos*(HBrightness/100),1) + float4(E[xPos+(yPos*resolution)].pos*(EBrightness/100),1);
-    Result[id.xy] = HF+EF;
+    Result[id.xy] = HF+EF+float4(1,1,1,1)*200*(length(E[xPos+(yPos*resolution)].cond));
     if(xPos == selectedX && yPos == selectedY){
         Result[id.xy] = float4(1,1,1,1);
     }
+    if(id.x == 50 && id.y == 50){
+        Result[id.xy] = float4(1,0,1,1);
+    }
+    //Result[id.xy] = float4(1,0,1,1);//*length(H[xPos+(yPos*resolution)].cond);
 }

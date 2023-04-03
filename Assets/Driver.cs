@@ -89,23 +89,13 @@ public class Driver : MonoBehaviour {
                 HFields[(i*(int)resolution)+j].cond.y = sig;
                 EFields[(i*(int)resolution)+j].cond.y = sig;
 
-                HFields[-(i-Width)+(j*(int)resolution)].cond.x = sig;
-                EFields[-(i-Width)+(j*(int)resolution)].cond.x = sig;
+                HFields[-(i-Width+1)+(j*(int)resolution)].cond.x = sig;
+                EFields[-(i-Width+1)+(j*(int)resolution)].cond.x = sig;
                 
-                HFields[(-(i-Width)*(int)resolution)+j].cond.y = sig;
-                EFields[(-(i-Width)*(int)resolution)+j].cond.y = sig;
+                HFields[(-(i-Width+1)*(int)resolution)+j].cond.y = sig;
+                EFields[(-(i-Width+1)*(int)resolution)+j].cond.y = sig;
             }
         }
-        // for(int i=10; i>-1; i--){
-        //     for(int j=0; j<Height;j++){
-        //         float sig = (e0*0.5f/timeStep)*Mathf.Pow(((float)(i+1)/(float)Width),3);
-        //         HFields[i+(j*(int)resolution)].cond.x = sig;
-        //         EFields[i+(j*(int)resolution)].cond.x = sig;
-
-        //         HFields[(i*(int)resolution)+j].cond.y = sig;
-        //         EFields[(i*(int)resolution)+j].cond.y = sig;
-        //     }
-        // }
 
         selectedCell = new Vector2(1,1);
         HFields[0].Color = Color.red;
@@ -265,6 +255,13 @@ public class Driver : MonoBehaviour {
         if(Input.GetKeyDown(KeyCode.Period)){
             view = 1;
         }
+        if(Input.GetKeyDown(KeyCode.B)){
+            for(int i =(int)resolution/4; i<3*resolution/4;i++){
+                for(int j = (int)resolution/4; j<3 * resolution/4; j++){
+                    HFields[i+(int)(j*resolution)].coef = 7;
+                }
+            }
+        }
 
     }
 
@@ -299,7 +296,8 @@ public class Driver : MonoBehaviour {
                     "\nH: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Position+
                     "\nε: " + EFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].coef+
                     "\nμ: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].coef+
-                    "\nσ: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].cond+
+                    "\nσx: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].cond.x+
+                    "\nσy: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].cond.y+
                     "\nH inte: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].integrated+
                     "\nE inte: " + EFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].integrated;
             }
