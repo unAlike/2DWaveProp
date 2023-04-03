@@ -6,11 +6,15 @@ struct FDTD{
     float4 color;
     float time;
     float coef;
+    float2 cond;
+    float3 integrated;
 };
 
 RWStructuredBuffer<FDTD> H;
 RWStructuredBuffer<FDTD> E;
 RWTexture2D<float4> Result;
+float selectedX;
+float selectedY;
 float resolution;
 float time;
 float EBrightness, HBrightness;
@@ -29,4 +33,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     float4 EF = float4(0,0,(H[xPos+(yPos*resolution)].pos.x+H[xPos+(yPos*resolution)].pos.y)/2,1)*HBrightness/100;
     //Result[id.xy] =  float4(H[xPos+(yPos*resolution)].pos*(HBrightness/100),1) + float4(E[xPos+(yPos*resolution)].pos*(EBrightness/100),1);
     Result[id.xy] = HF+EF;
+    if(xPos == selectedX && yPos == selectedY){
+        Result[id.xy] = float4(1,1,1,1);
+    }
 }

@@ -11,7 +11,7 @@ public class Driver : MonoBehaviour {
     FDTD[,] test;
     public ComputeShader SimCompute, CellsCompute;
     public RenderTexture render;
-    public int EBrightness, HBrightness = 100;
+    public int EBrightness, HBrightness = 50;
     int Width, Height = 10;
 
     int NUM_FDTD = 100;
@@ -19,9 +19,10 @@ public class Driver : MonoBehaviour {
     int counter;
     int view = 0;
     public float resolution;
-    public float timeStep, C, u, e, Mh, Me, time, TProp, dist, add;
+    float e0 = 8.85f * Mathf.Pow(10,-12);
+    public float timeStep, C, ur, er, Mh, Me, time, TProp, dist, add;
 
-    float E3, E2, E1, H3, H2, H1 = 0;
+    float E3, E2, E1, H3, H2, H1, H0 = 0;
     public bool shouldUpdate = true;
 
     Vector2 selectedCell = new Vector2(0,0);
@@ -32,10 +33,8 @@ public class Driver : MonoBehaviour {
         C = 299792458;
         print(C);
         time = 0;
-        //timeStep = Mathf.Pow(1*10,-10);
+
         
-        Mh = C*timeStep/(1+u);
-        Me = C*timeStep/(1-e);
         TProp = Mh*NUM_FDTD*timeStep/C;
         
 //        GameObject.Find("Distance").GetComponent<Text>().text = "" + NUM_FDTD*dist;
@@ -57,7 +56,7 @@ public class Driver : MonoBehaviour {
         NUM_FDTD = Width*Height;
         EFields = new FDTD[NUM_FDTD];
         HFields = new FDTD[NUM_FDTD];
-
+ 
         for(int i=0; i< NUM_FDTD; i++){
             //Create 600 FDTD cells
             FDTD h = new FDTD();
@@ -66,17 +65,20 @@ public class Driver : MonoBehaviour {
             EFields[i] = ef;
 
             HFields[i].Position = new Vector3(0,0,0);
-            //HFields[i].Curl = new Vector3(0,0,0);
             HFields[i].Color = Random.ColorHSV();
-            HFields[i].coef = u;
+            HFields[i].coef = ur;
+            HFields[i].cond = new Vector2(0,0);
+            HFields[i].integrated = new Vector3(0,0,0);
 
             EFields[i].Position = new Vector3(0,0,0);
-            //EFields[i].Curl = new Vector3(0,0,0);
             EFields[i].Color = Random.ColorHSV();
-            EFields[i].coef = e;
+            EFields[i].coef = er;
+            EFields[i].cond = new Vector2(0,0);
+            EFields[i].integrated = new Vector3(0,0,0);
         }
         selectedCell = new Vector2(1,1);
-
+        HFields[0].Color = Color.red;
+        EFields[0].Color = Color.red;
     }
     public void setupGrid() {
 
@@ -84,7 +86,7 @@ public class Driver : MonoBehaviour {
         RectTransform ImgRect = GameObject.Find("SimWindow").GetComponent<RectTransform>();
         render = new RenderTexture(Width,Height,1);
         render.enableRandomWrite = true;
-        render.filterMode = FilterMode.Point;
+        render.filterMode = FilterMode.Bilinear;
         render.Create();
         GameObject.Find("SimWindow").GetComponent<RawImage>().texture = render;
         changeColor();
@@ -103,14 +105,13 @@ public class Driver : MonoBehaviour {
             counter++;
             time = (float)counter*(float)timeStep;
             //Update H from E
-            
             if(counter%2==0)updateHField();
             //Update E From H
             else updateEField();
         }
         
-        ComputeBuffer Hf = new ComputeBuffer(HFields.Length,sizeof(float)*8);
-        ComputeBuffer Ef = new ComputeBuffer(EFields.Length,sizeof(float)*8);
+        ComputeBuffer Hf = new ComputeBuffer(HFields.Length,sizeof(float)*13);
+        ComputeBuffer Ef = new ComputeBuffer(EFields.Length,sizeof(float)*13);
         
         Hf.SetData(HFields);
         Ef.SetData(EFields);
@@ -121,6 +122,8 @@ public class Driver : MonoBehaviour {
         SimCompute.SetFloat("resolution", resolution);
         SimCompute.SetFloat("EBrightness", EBrightness);
         SimCompute.SetFloat("HBrightness", HBrightness);
+        SimCompute.SetFloat("selectedX", selectedCell.x);
+        SimCompute.SetFloat("selectedY", selectedCell.y);
         SimCompute.Dispatch(0,render.width,render.height,1);
 
         Hf.Release();
@@ -131,9 +134,10 @@ public class Driver : MonoBehaviour {
 
 
     void updateHField(){
-        ComputeBuffer HFieldBuffer = new ComputeBuffer(HFields.Length,sizeof(float)*8);
-        ComputeBuffer EFieldBuffer = new ComputeBuffer(EFields.Length, sizeof(float)*8);
-
+        ComputeBuffer HFieldBuffer = new ComputeBuffer(HFields.Length,sizeof(float)*13);
+        ComputeBuffer EFieldBuffer = new ComputeBuffer(EFields.Length, sizeof(float)*13);
+        HFields[0].Color = Color.red;
+        EFields[0].Color = Color.red;
         HFieldBuffer.SetData(HFields);
         EFieldBuffer.SetData(EFields);
 
@@ -153,8 +157,8 @@ public class Driver : MonoBehaviour {
         EFieldBuffer.Release();
     }
     void updateEField(){
-        ComputeBuffer HFieldBuffer = new ComputeBuffer(HFields.Length,sizeof(float)*8);
-        ComputeBuffer EFieldBuffer = new ComputeBuffer(EFields.Length, sizeof(float)*8);
+        ComputeBuffer HFieldBuffer = new ComputeBuffer(HFields.Length,sizeof(float)*13);
+        ComputeBuffer EFieldBuffer = new ComputeBuffer(EFields.Length, sizeof(float)*13);
         HFieldBuffer.SetData(HFields);
         EFieldBuffer.SetData(EFields);
         CellsCompute.SetBuffer(0,"HFields",HFieldBuffer);
@@ -201,16 +205,17 @@ public class Driver : MonoBehaviour {
 
     void debug(){
         if(Input.GetKeyDown(KeyCode.LeftArrow)){
-            selectedCell.x--;
+            
+            if(selectedCell.x>0) selectedCell.x--;
         }
         if(Input.GetKeyDown(KeyCode.RightArrow)){
-            selectedCell.x++;
+            if(selectedCell.x<resolution-1)selectedCell.x++;
         }
         if(Input.GetKeyDown(KeyCode.UpArrow)){
-            selectedCell.y++;
+            if(selectedCell.y < resolution-1) selectedCell.y++;
         }
         if(Input.GetKeyDown(KeyCode.DownArrow)){
-            selectedCell.y--;
+            if(selectedCell.y > 0) selectedCell.y--;
         }
         if(Input.GetKey(KeyCode.Q)){
             changeColor();
@@ -273,17 +278,25 @@ public class Driver : MonoBehaviour {
         pos.y = Mathf.FloorToInt(resolution*(pos.y/r.rect.height));
         selectedCell = pos;
             //"\nCurl: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Curl;
-
+    }
+    public void onClickOff(){
+        selectedCell = new Vector2(-1,-1);
     }
     void printStats(){
         if(selectedCell!=null){
-            Vector2 pos = selectedCell;
-            GameObject.Find("InfoText").GetComponent<Text>().text = "Info:\nCoords: "+ pos +
-                "\nColor: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Color+
-                "\nE: " + EFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Position+
-                "\nH: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Position+
-                "\nε: " + EFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].coef+
-                "\nμ: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].coef;
+            if(selectedCell.x != -1 && selectedCell.y != -1){
+                Vector2 pos = selectedCell;
+                GameObject.Find("InfoText").GetComponent<Text>().text = "Info:\nCoords: "+ pos +
+                    "\nColor: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Color+
+                    "\nE: " + EFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Position+
+                    "\nH: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Position+
+                    "\nε: " + EFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].coef+
+                    "\nμ: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].coef+
+                    "\nσ: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].cond+
+                    "\nH inte: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].integrated+
+                    "\nE inte: " + EFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].integrated;
+            }
+            else GameObject.Find("InfoText").GetComponent<Text>().text = "Info:";
         }
     }
 
