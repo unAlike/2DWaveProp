@@ -87,6 +87,8 @@ void CSMain (uint3 id : SV_DispatchThreadID)
             if(xPos!=resolution-1){
                 CHz = ((HFields[xPos+(yPos*resolution)].pos.y-HFields[(xPos+(yPos*resolution))-1].pos.y)/dist)-((HFields[xPos+(yPos*resolution)].pos.x-HFields[xPos+((yPos-1)*resolution)].pos.x)/dist);
             }
+            else CHz = ((HFields[xPos+(yPos*resolution)].pos.y-0)/dist)-((HFields[xPos+(yPos*resolution)].pos.x-HFields[xPos+((yPos-1)*resolution)].pos.x)/dist);
+
         }
         // x = 0
         else if(xOn && !yOn){
@@ -115,5 +117,11 @@ void CSMain (uint3 id : SV_DispatchThreadID)
         E.pos.z = (1/EFields[xPos+(yPos*resolution)].coef)*(Dz);
         
         EFields[xPos+(yPos*resolution)] = E;
+    }
+    if(xPos == resolution-1 && yPos == resolution-1){
+        H.color = float4(1000,1000,1000,1000);
+        E.color = float4(1000,1000,1000,1000);
+        HFields[id.x] = H;
+        EFields[id.x] = E;
     }
 }

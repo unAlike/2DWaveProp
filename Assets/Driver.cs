@@ -79,21 +79,32 @@ public class Driver : MonoBehaviour {
             EFields[i].cond = new Vector2(0,0);
             EFields[i].integrated = new Vector3(0,0,0);
         }
-        for(int i=Width-20; i< Width; i++){
-            for(int j=0; j<Height;j++){
-                float sig = (e0*0.5f/timeStep)*Mathf.Pow(((float)(i+1)/(float)Width/2),3);
-                //Hi X and Y
-                HFields[i+(j*(int)resolution)].cond.x = sig;
-                EFields[i+(j*(int)resolution)].cond.x = sig;
-                
-                HFields[(i*(int)resolution)+j].cond.y = sig;
-                EFields[(i*(int)resolution)+j].cond.y = sig;
+        float[,] n2 = new float[(int)Width*2,(int)Width*2];
+        int nPML = 10;
 
-                HFields[-(i-Width+1)+(j*(int)resolution)].cond.x = sig;
-                EFields[-(i-Width+1)+(j*(int)resolution)].cond.x = sig;
-                
-                HFields[(-(i-Width+1)*(int)resolution)+j].cond.y = sig;
-                EFields[(-(i-Width+1)*(int)resolution)+j].cond.y = sig;
+        float[] pmlValues = new float[nPML*2];
+
+        for(int i=1; i <= 2*nPML; i++){
+            float id = 2*nPML - i + 1;
+            float sig = (e0*0.5f/timeStep)*Mathf.Pow((float)id/2/((float)nPML),3);
+            pmlValues[i-1] = sig;
+        }
+        foreach(float f in pmlValues){
+            print(f);
+        }
+        for(int i=0; i<pmlValues.Length; i=i+2){
+            for(int j = 0; j < Height; j++){
+                HFields[(int)(i/2)+j*(int)(resolution)].cond.x = pmlValues[((int)(i/2))];
+                EFields[(int)(i/2)+j*(int)(resolution)].cond.x = pmlValues[((int)(i/2)+1)];
+
+                HFields[Width-1-(int)(i/2)+j*(int)(resolution)].cond.x = pmlValues[((int)(i/2))];
+                EFields[Width-1-(int)(i/2)+j*(int)(resolution)].cond.x = pmlValues[((int)(i/2)+1)];
+
+                HFields[(int)(j)+(i/2)*(int)(resolution)].cond.y = pmlValues[((int)(i/2))];
+                EFields[(int)(j)+(i/2)*(int)(resolution)].cond.y = pmlValues[((int)(i/2)+1)];
+
+                HFields[(Height-1-(i/2))*(int)resolution + j].cond.y = pmlValues[((int)(i/2))];
+                EFields[(Height-1-(i/2))*(int)resolution + j].cond.y = pmlValues[((int)(i/2)+1)];
             }
         }
 
@@ -297,7 +308,9 @@ public class Driver : MonoBehaviour {
                     "\nε: " + EFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].coef+
                     "\nμ: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].coef+
                     "\nσx: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].cond.x+
-                    "\nσy: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].cond.y+
+                    "\nσy: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].cond.y+ "\n"+
+                    "\nσx: " + EFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].cond.x+
+                    "\nσy: " + EFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].cond.y+
                     "\nH inte: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].integrated+
                     "\nE inte: " + EFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].integrated;
             }
