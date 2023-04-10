@@ -121,7 +121,6 @@ public class Driver : MonoBehaviour {
         render.filterMode = FilterMode.Bilinear;
         render.Create();
         GameObject.Find("SimWindow").GetComponent<RawImage>().texture = render;
-        changeColor();
     }
 
     void Update(){
@@ -205,12 +204,10 @@ public class Driver : MonoBehaviour {
 
         HFieldBuffer.Release();
         EFieldBuffer.Release();
-
     }
     public void updateBrightness(){
         HBrightness = (int)GameObject.Find("HBright").GetComponent<Slider>().value;
         EBrightness = (int)GameObject.Find("EBright").GetComponent<Slider>().value;
-        
     }
 
     public void AddDevice(){
@@ -228,13 +225,6 @@ public class Driver : MonoBehaviour {
             GameObject.Find("StatusText").GetComponent<Text>().color = Color.green;
         }
     }
-
-    void changeColor(){
-        for(int i =0; i<NUM_FDTD; i++){
-            HFields[i].Color = Random.ColorHSV();
-        }
-    }
-
     void debug(){
         if(Input.GetKeyDown(KeyCode.LeftArrow)){
             if(selectedCell.x>0) selectedCell.x--;
@@ -248,9 +238,6 @@ public class Driver : MonoBehaviour {
         if(Input.GetKeyDown(KeyCode.DownArrow)){
             if(selectedCell.y > 0) selectedCell.y--;
         }
-        if(Input.GetKey(KeyCode.Q)){
-            changeColor();
-        }
         if(Input.GetKeyDown(KeyCode.H)){
             updateHField();
         }
@@ -262,12 +249,6 @@ public class Driver : MonoBehaviour {
         }
         if(Input.GetKey(KeyCode.P)){
             EFields[Width/2+((int)resolution*(Height/2))].Position += new Vector3(0,0,1f);
-        }
-        if(Input.GetKeyDown(KeyCode.Comma)){
-            view = 0;
-        }
-        if(Input.GetKeyDown(KeyCode.Period)){
-            view = 1;
         }
         if(Input.GetKeyDown(KeyCode.B)){
             for(int i =(int)resolution/4; i<3*resolution/4;i++){
@@ -295,7 +276,6 @@ public class Driver : MonoBehaviour {
         pos.x = Mathf.FloorToInt(resolution*(pos.x/r.rect.width));
         pos.y = Mathf.FloorToInt(resolution*(pos.y/r.rect.height));
         selectedCell = pos;
-            //"\nCurl: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Curl;
     }
     public void onClickOff(){
         selectedCell = new Vector2(-1,-1);
