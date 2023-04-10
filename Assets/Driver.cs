@@ -257,6 +257,9 @@ public class Driver : MonoBehaviour {
         if(Input.GetKeyDown(KeyCode.E)){
             updateEField();
         }
+        if(Input.GetKeyDown(KeyCode.R)){
+            setupCells();
+        }
         if(Input.GetKey(KeyCode.P)){
             EFields[Width/2+((int)resolution*(Height/2))].Position += new Vector3(0,0,1f);
         }
