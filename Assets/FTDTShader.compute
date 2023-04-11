@@ -19,6 +19,7 @@ RWStructuredBuffer<FDTD> HFields;
 
 RWStructuredBuffer<FDTD> EFields;
 
+float addG;
 float time;
 float dist;
 int resolution;
@@ -113,15 +114,9 @@ void CSMain (uint3 id : SV_DispatchThreadID)
         float mDz4 = -(1/mDz0)*(time/pow(e,2))*E.cond.x*E.cond.y;
 
         float Dz = (mDz1 * (E.coef * E.pos.z)) + (mDz2 * CHz) + (mDz4 * E.integrated.z);
-        Dz = (E.pos.z * E.coef) + (C*time*CHz);
+        Dz = (E.pos.z * E.coef) + (C*time*CHz) + E.color.x;
         E.pos.z = (1/EFields[xPos+(yPos*resolution)].coef)*(Dz);
         
         EFields[xPos+(yPos*resolution)] = E;
-    }
-    if(xPos == resolution-1 && yPos == resolution-1){
-        H.color = float4(1000,1000,1000,1000);
-        E.color = float4(1000,1000,1000,1000);
-        HFields[id.x] = H;
-        EFields[id.x] = E;
     }
 }

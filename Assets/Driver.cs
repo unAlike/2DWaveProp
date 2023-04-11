@@ -8,6 +8,10 @@ public class Driver : MonoBehaviour {
     LineRenderer Hline, Eline;
     FDTD[] HFields, EFields;
 
+    [SerializeField]
+    List<Source> Sources = new List<Source>();
+    int sourceNum = -1;
+
     FDTD[,] test;
     public ComputeShader SimCompute, CellsCompute;
     public RenderTexture render;
@@ -19,13 +23,20 @@ public class Driver : MonoBehaviour {
     int counter;
     int view = 0;
     public float resolution;
+    /////////////////////////////
+    //Source Stuff
+    // public float sStartTime;
+    // public float sA;
+    // public Source stest;
+    // public float sMag = 20;
+    // public float sB = 2;
+    ////////////////////////////
     float e0 = 8.85f * Mathf.Pow(10,-12);
     float u0 = Mathf.Pow(1.25663706f,-6);
     public float timeStep, C, ur, er, Mh, Me, time, TProp, dist, add, DO_NOT_EDIT, u, e;
 
     float E3, E2, E1, H3, H2, H1, H0 = 0;
     public bool shouldUpdate = true;
-
     Vector2 selectedCell = new Vector2(0,0);
     void Start() {
         GameObject.Find("HBright").GetComponent<Slider>().value = HBrightness;
@@ -68,13 +79,13 @@ public class Driver : MonoBehaviour {
             EFields[i] = ef;
 
             HFields[i].Position = new Vector3(0,0,0);
-            HFields[i].Color = Random.ColorHSV();
+            HFields[i].Color = Color.black;
             HFields[i].coef = ur;
             HFields[i].cond = new Vector2(0,0);
             HFields[i].integrated = new Vector3(0,0,0);
 
             EFields[i].Position = new Vector3(0,0,0);
-            EFields[i].Color = Random.ColorHSV();
+            EFields[i].Color = Color.black;
             EFields[i].coef = er;
             EFields[i].cond = new Vector2(0,0);
             EFields[i].integrated = new Vector3(0,0,0);
@@ -108,9 +119,8 @@ public class Driver : MonoBehaviour {
             }
         }
 
-        selectedCell = new Vector2(1,1);
-        HFields[0].Color = Color.red;
-        EFields[0].Color = Color.red;
+        selectedCell = new Vector2(Width/2,Height/2);
+
     }
     public void setupGrid() {
 
@@ -135,8 +145,9 @@ public class Driver : MonoBehaviour {
         if(shouldUpdate){
             counter++;
             time = (float)counter*(float)timeStep;
+            updateSources();
             //Update H from E
-            if(counter%2==0)updateHField();
+            if(counter%2==0) updateHField();
             //Update E From H
             else updateEField();
         }
@@ -167,8 +178,6 @@ public class Driver : MonoBehaviour {
     void updateHField(){
         ComputeBuffer HFieldBuffer = new ComputeBuffer(HFields.Length,sizeof(float)*13);
         ComputeBuffer EFieldBuffer = new ComputeBuffer(EFields.Length, sizeof(float)*13);
-        HFields[0].Color = Color.red;
-        EFields[0].Color = Color.red;
         HFieldBuffer.SetData(HFields);
         EFieldBuffer.SetData(EFields);
 
@@ -210,8 +219,11 @@ public class Driver : MonoBehaviour {
         EBrightness = (int)GameObject.Find("EBright").GetComponent<Slider>().value;
     }
 
-    public void AddDevice(){
-        // TODO
+    public void updateSources(){
+        for(int i = 0; i < Sources.Count; i++){
+            Sources[i].update(time);
+            EFields[(int)Sources[i].pos.x + ((int)Sources[i].pos.y*Height)].Color.r = Sources[i].getSourceVal();
+        }
     }
     
     public void setSim(bool r){
@@ -247,8 +259,18 @@ public class Driver : MonoBehaviour {
         if(Input.GetKeyDown(KeyCode.R)){
             setupCells();
         }
-        if(Input.GetKey(KeyCode.P)){
-            EFields[Width/2+((int)resolution*(Height/2))].Position += new Vector3(0,0,1f);
+        if(Input.GetKeyDown(KeyCode.A)){
+            Source s = new Source(selectedCell, 10, .9f, 1*Mathf.Pow(10,7));
+            Sources.Add(s);
+        }
+        if(Input.GetKeyDown(KeyCode.C)){
+            Sources.Add(new Source(selectedCell, 10, .9f, 9*Mathf.Pow(10,7)));
+        }
+        if(Input.GetKeyDown(KeyCode.P)){
+            for(int i=0; i < Sources.Count; i++){
+                print("Started Source " + i+1);
+                Sources[i].start(time);
+            }
         }
         if(Input.GetKeyDown(KeyCode.B)){
             for(int i =(int)resolution/4; i<3*resolution/4;i++){
@@ -257,9 +279,10 @@ public class Driver : MonoBehaviour {
                 }
             }
         }
-
     }
-
+    public int getIndex(int x, int y){
+        return (x+(y*Height));
+    }
     public void UI(){
         Vector2 pos;
         RectTransform r = GameObject.Find("SimWindow").GetComponent<RectTransform>();
@@ -280,12 +303,18 @@ public class Driver : MonoBehaviour {
     public void onClickOff(){
         selectedCell = new Vector2(-1,-1);
     }
+
     void printStats(){
         if(selectedCell!=null){
             if(selectedCell.x != -1 && selectedCell.y != -1){
                 Vector2 pos = selectedCell;
+                string srcText = "";
+                foreach(Source s in Sources){
+                    srcText += "____________\nPos: (" + s.pos.x + ", " + s.pos.y + ")\nVal: " + s.getSourceVal() + "\n";       
+                }
                 GameObject.Find("InfoText").GetComponent<Text>().text = "Info:\nCoords: "+ pos +
-                    "\nColor: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Color+
+                    "\nColor H: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Color+
+                    "\nColor E: " + EFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Color+
                     "\nE: " + EFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Position+
                     "\nH: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Position+
                     "\nε: " + EFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].coef+
@@ -295,10 +324,11 @@ public class Driver : MonoBehaviour {
                     "\nσx: " + EFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].cond.x+
                     "\nσy: " + EFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].cond.y+
                     "\nH inte: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].integrated+
-                    "\nE inte: " + EFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].integrated;
+                    "\nE inte: " + EFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].integrated+ "\n\n"+
+                    srcText;
+                    
             }
             else GameObject.Find("InfoText").GetComponent<Text>().text = "Info:";
         }
     }
-
 }
