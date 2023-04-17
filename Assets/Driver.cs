@@ -10,12 +10,19 @@ public class Driver : MonoBehaviour {
 
     [SerializeField]
     List<Source> Sources = new List<Source>();
+
+    [SerializeField]
+    GameObject devicePrefab;
+
+    [SerializeField]
+    List<GameObject> Devices = new List<GameObject>();
     int sourceNum = -1;
 
     FDTD[,] test;
     public ComputeShader SimCompute, CellsCompute;
     public RenderTexture render;
     public int EBrightness, HBrightness = 50;
+    bool inspected = false;
     int Width, Height = 10;
 
     int NUM_FDTD = 100;
@@ -23,14 +30,6 @@ public class Driver : MonoBehaviour {
     int counter;
     int view = 0;
     public float resolution;
-    /////////////////////////////
-    //Source Stuff
-    // public float sStartTime;
-    // public float sA;
-    // public Source stest;
-    // public float sMag = 20;
-    // public float sB = 2;
-    ////////////////////////////
     float e0 = 8.85f * Mathf.Pow(10,-12);
     float u0 = Mathf.Pow(1.25663706f,-6);
     public float timeStep, C, ur, er, Mh, Me, time, TProp, dist, add, DO_NOT_EDIT, u, e;
@@ -38,7 +37,10 @@ public class Driver : MonoBehaviour {
     float E3, E2, E1, H3, H2, H1, H0 = 0;
     public bool shouldUpdate = true;
     Vector2 selectedCell = new Vector2(0,0);
+    GameObject InfoPanel;
     void Start() {
+        InfoPanel = GameObject.Find("InfoPanel").gameObject;
+        setSim(true);
         GameObject.Find("HBright").GetComponent<Slider>().value = HBrightness;
         GameObject.Find("EBright").GetComponent<Slider>().value = EBrightness;
         add = 0;
@@ -65,6 +67,7 @@ public class Driver : MonoBehaviour {
     public void setupCells(){
         e = er*e0;
         u = ur*u0;
+        Sources.Clear();
         Width = (int)resolution;
         Height = (int)resolution;
         NUM_FDTD = Width*Height;
@@ -91,7 +94,7 @@ public class Driver : MonoBehaviour {
             EFields[i].integrated = new Vector3(0,0,0);
         }
         float[,] n2 = new float[(int)Width*2,(int)Width*2];
-        int nPML = 10;
+        int nPML = 20;
 
         float[] pmlValues = new float[nPML*2];
 
@@ -136,7 +139,27 @@ public class Driver : MonoBehaviour {
     void Update(){
         debug();
         if(HFields==null || EFields==null){
+            InfoPanel.SetActive(true);
             setupCells();
+        }
+        if(inspected){
+            Vector2 pos = Vector2.zero;
+            RectTransform r = GameObject.Find("SimWindow").GetComponent<RectTransform>();
+            pos = Input.mousePosition;
+            pos.x = Mathf.FloorToInt(resolution*(pos.x/r.rect.width));
+            pos.y = Mathf.FloorToInt(resolution*(pos.y/r.rect.height));
+            selectedCell = pos;
+            InfoPanel.SetActive(true);
+
+            Vector3 newPos = Vector3.zero;
+            if(Camera.current != null){
+                newPos = Camera.current.ScreenToWorldPoint(Input.mousePosition);
+            }
+            newPos.z=0;
+            InfoPanel.transform.position = newPos + new Vector3(0.5f,0.5f,0);
+        }
+        else{
+            InfoPanel.SetActive(false);
         }
     }
     void FixedUpdate(){
@@ -237,6 +260,13 @@ public class Driver : MonoBehaviour {
             GameObject.Find("StatusText").GetComponent<Text>().color = Color.green;
         }
     }
+
+    public void reset(){
+        setupGrid();
+        InfoPanel.SetActive(true);
+        setupCells();
+    }
+
     void debug(){
         if(Input.GetKeyDown(KeyCode.LeftArrow)){
             if(selectedCell.x>0) selectedCell.x--;
@@ -264,7 +294,7 @@ public class Driver : MonoBehaviour {
             Sources.Add(s);
         }
         if(Input.GetKeyDown(KeyCode.C)){
-            Sources.Add(new Source(selectedCell, 10, .9f, 9*Mathf.Pow(10,7)));
+            Sources.Add(new Source(selectedCell, 10, .9f, 3*Mathf.Pow(10,7)));
         }
         if(Input.GetKeyDown(KeyCode.P)){
             for(int i=0; i < Sources.Count; i++){
@@ -292,20 +322,30 @@ public class Driver : MonoBehaviour {
         if(pos.x < resolution && pos.y<resolution) EFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Position += new Vector3(0,0,10);
     }
 
-    public void onHover(){
-        Vector2 pos;
-        RectTransform r = GameObject.Find("SimWindow").GetComponent<RectTransform>();
-        pos = Input.mousePosition;
-        pos.x = Mathf.FloorToInt(resolution*(pos.x/r.rect.width));
-        pos.y = Mathf.FloorToInt(resolution*(pos.y/r.rect.height));
-        selectedCell = pos;
+    public void addDevice(){
+        GameObject content = GameObject.Find("Content").gameObject;
+        GameObject device = Instantiate(devicePrefab);
+        device.transform.SetParent(content.transform, false);
+        Rect newR = content.GetComponent<RectTransform>().rect;
+        newR.height = content.transform.childCount * device.GetComponent<RectTransform>().rect.height;
+        content.GetComponent<RectTransform>().sizeDelta = new Vector2(content.GetComponent<RectTransform>().sizeDelta.x,device.GetComponent<RectTransform>().rect.height * content.transform.childCount);
+        
+        //device.transform.localScale = Vector3.one;
+    }
+
+    public void onStartHover(){
+        inspected = true;
+    }
+    public void onStopHover(){
+        selectedCell = new Vector2(-1,-1);
+        inspected = false;
     }
     public void onClickOff(){
         selectedCell = new Vector2(-1,-1);
     }
 
     void printStats(){
-        if(selectedCell!=null){
+        if(selectedCell!=null && InfoPanel.activeSelf){
             if(selectedCell.x != -1 && selectedCell.y != -1){
                 Vector2 pos = selectedCell;
                 string srcText = "";

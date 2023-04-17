@@ -32,7 +32,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     float4 HF = float4(E[xPos+yPos*resolution].pos.z*(EBrightness/100),-E[xPos+yPos*resolution].pos.z*(EBrightness/100),0,1);
     float4 EF = float4(0,0,(H[xPos+(yPos*resolution)].pos.x+H[xPos+(yPos*resolution)].pos.y)/2,1)*HBrightness/100;
     //Result[id.xy] =  float4(H[xPos+(yPos*resolution)].pos*(HBrightness/100),1) + float4(E[xPos+(yPos*resolution)].pos*(EBrightness/100),1);
-    Result[id.xy] = HF+EF+float4(1,1,1,1)*200*(length(E[xPos+(yPos*resolution)].cond));
+    Result[id.xy] = HF+EF;
     if(xPos == selectedX && yPos == selectedY){
         Result[id.xy] = float4(1,1,1,1);
     }
