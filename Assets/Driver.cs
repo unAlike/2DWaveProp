@@ -15,7 +15,7 @@ public class Driver : MonoBehaviour {
     GameObject devicePrefab;
 
     [SerializeField]
-    List<GameObject> Devices = new List<GameObject>();
+    public List<GameObject> Devices = new List<GameObject>();
     int sourceNum = -1;
 
     FDTD[,] test;
@@ -37,8 +37,10 @@ public class Driver : MonoBehaviour {
     float E3, E2, E1, H3, H2, H1, H0 = 0;
     public bool shouldUpdate = true;
     Vector2 selectedCell = new Vector2(0,0);
-    GameObject InfoPanel;
+    public GameObject InfoPanel, editMenu;
     void Start() {
+        editMenu = GameObject.Find("EditMenu");
+        editMenu.SetActive(false);
         InfoPanel = GameObject.Find("InfoPanel").gameObject;
         setSim(true);
         GameObject.Find("HBright").GetComponent<Slider>().value = HBrightness;
@@ -124,6 +126,7 @@ public class Driver : MonoBehaviour {
 
         selectedCell = new Vector2(Width/2,Height/2);
 
+        updateDeviceValues();
     }
     public void setupGrid() {
 
@@ -138,28 +141,16 @@ public class Driver : MonoBehaviour {
 
     void Update(){
         debug();
+        updateDeviceValues();
         if(HFields==null || EFields==null){
             InfoPanel.SetActive(true);
             setupCells();
         }
         if(inspected){
-            Vector2 pos = Vector2.zero;
-            RectTransform r = GameObject.Find("SimWindow").GetComponent<RectTransform>();
-            pos = Input.mousePosition;
-            pos.x = Mathf.FloorToInt(resolution*(pos.x/r.rect.width));
-            pos.y = Mathf.FloorToInt(resolution*(pos.y/r.rect.height));
-            selectedCell = pos;
-            InfoPanel.SetActive(true);
 
-            Vector3 newPos = Vector3.zero;
-            if(Camera.current != null){
-                newPos = Camera.current.ScreenToWorldPoint(Input.mousePosition);
-            }
-            newPos.z=0;
-            InfoPanel.transform.position = newPos + new Vector3(0.5f,0.5f,0);
         }
         else{
-            InfoPanel.SetActive(false);
+            
         }
     }
     void FixedUpdate(){
@@ -329,13 +320,22 @@ public class Driver : MonoBehaviour {
         Rect newR = content.GetComponent<RectTransform>().rect;
         newR.height = content.transform.childCount * device.GetComponent<RectTransform>().rect.height;
         content.GetComponent<RectTransform>().sizeDelta = new Vector2(content.GetComponent<RectTransform>().sizeDelta.x,device.GetComponent<RectTransform>().rect.height * content.transform.childCount);
-        
+        Devices.Add(device);
         //device.transform.localScale = Vector3.one;
     }
 
     public void onStartHover(){
         inspected = true;
     }
+    public void onClick(){
+        Vector2 pos;
+        RectTransform r = GameObject.Find("SimWindow").GetComponent<RectTransform>();
+        pos = Input.mousePosition;
+        pos.x = Mathf.FloorToInt(resolution*(pos.x/r.rect.width));
+        pos.y = Mathf.FloorToInt(resolution*(pos.y/r.rect.height));
+        selectedCell = pos;
+    }
+
     public void onStopHover(){
         selectedCell = new Vector2(-1,-1);
         inspected = false;
@@ -343,6 +343,25 @@ public class Driver : MonoBehaviour {
     public void onClickOff(){
         selectedCell = new Vector2(-1,-1);
     }
+
+    public void updateDeviceValues(){
+        for(int i = 0; i < resolution;i++){
+            for(int j = 0; j<resolution; j++){
+                HFields[i+(int)(j*resolution)].coef = 1;
+            }
+        }
+        for(int i=0; i<Devices.Count; i++){
+            Device d = Devices[i].GetComponent<Device>();
+            for(int w = (int)d.pos.x; w < d.pos.x+d.width; w++){
+                for(int h = (int)d.pos.y; h < d.pos.y+d.height; h++){
+                    if(w+d.width>=Width) continue;
+                    if(h+d.height>=Height) continue;
+                    HFields[w+h*Height].coef = d.u;
+                }
+            }
+        }
+    }
+
 
     void printStats(){
         if(selectedCell!=null && InfoPanel.activeSelf){
@@ -353,8 +372,6 @@ public class Driver : MonoBehaviour {
                     srcText += "____________\nPos: (" + s.pos.x + ", " + s.pos.y + ")\nVal: " + s.getSourceVal() + "\n";       
                 }
                 GameObject.Find("InfoText").GetComponent<Text>().text = "Info:\nCoords: "+ pos +
-                    "\nColor H: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Color+
-                    "\nColor E: " + EFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Color+
                     "\nE: " + EFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Position+
                     "\nH: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Position+
                     "\nε: " + EFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].coef+
@@ -363,8 +380,6 @@ public class Driver : MonoBehaviour {
                     "\nσy: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].cond.y+ "\n"+
                     "\nσx: " + EFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].cond.x+
                     "\nσy: " + EFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].cond.y+
-                    "\nH inte: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].integrated+
-                    "\nE inte: " + EFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].integrated+ "\n\n"+
                     srcText;
                     
             }
