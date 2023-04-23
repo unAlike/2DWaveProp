@@ -786,3 +786,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 66959eb639b199941835c93ae06054ae, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  pos: {x: 0, y: 0}
+  active: 0
+  type: 0
+  u: 0
+  width: 0
+  height: 0
+  freq: 0
+  wl: 0

@@ -6,10 +6,9 @@ using UnityEditor.UI;
 public class Driver : MonoBehaviour {
     // Start is called before the first frame update
     LineRenderer Hline, Eline;
-    FDTD[] HFields, EFields;
+    public FDTD[] HFields, EFields;
 
-    [SerializeField]
-    List<Source> Sources = new List<Source>();
+    //List<Source> Sources = new List<Source>();
 
     [SerializeField]
     GameObject devicePrefab;
@@ -37,6 +36,7 @@ public class Driver : MonoBehaviour {
     float E3, E2, E1, H3, H2, H1, H0 = 0;
     public bool shouldUpdate = true;
     Vector2 selectedCell = new Vector2(0,0);
+    public Vector2 devicePos = new Vector2(-1,-1);
     public GameObject InfoPanel, editMenu;
     void Start() {
         editMenu = GameObject.Find("EditMenu");
@@ -69,7 +69,6 @@ public class Driver : MonoBehaviour {
     public void setupCells(){
         e = er*e0;
         u = ur*u0;
-        Sources.Clear();
         Width = (int)resolution;
         Height = (int)resolution;
         NUM_FDTD = Width*Height;
@@ -125,8 +124,9 @@ public class Driver : MonoBehaviour {
         }
 
         selectedCell = new Vector2(Width/2,Height/2);
-
-        updateDeviceValues();
+        if(Devices.Count>0){
+            updateDeviceValues();
+        }
     }
     public void setupGrid() {
 
@@ -175,6 +175,16 @@ public class Driver : MonoBehaviour {
         SimCompute.SetBuffer(0, "H", Hf);
         SimCompute.SetBuffer(0, "E", Ef);
         SimCompute.SetTexture(0,"Result",render);
+        if(editMenu.activeSelf){
+            SimCompute.SetFloat("deviceX", devicePos.x);
+            SimCompute.SetFloat("deviceY", devicePos.y);
+        }
+        else{
+            SimCompute.SetFloat("deviceX", -1);
+            SimCompute.SetFloat("deviceY", -1);
+        }
+        
+        
         SimCompute.SetFloat("resolution", resolution);
         SimCompute.SetFloat("EBrightness", EBrightness);
         SimCompute.SetFloat("HBrightness", HBrightness);
@@ -234,9 +244,12 @@ public class Driver : MonoBehaviour {
     }
 
     public void updateSources(){
-        for(int i = 0; i < Sources.Count; i++){
-            Sources[i].update(time);
-            EFields[(int)Sources[i].pos.x + ((int)Sources[i].pos.y*Height)].Color.r = Sources[i].getSourceVal();
+        for(int i = 0; i < Devices.Count; i++){
+            if(Devices[i].GetComponent<Device>().active && Devices[i].GetComponent<Device>().type == 2){
+                Devices[i].GetComponent<Device>().source.update(time);
+                print(Devices[i].GetComponent<Device>().source.getSourceVal());
+                EFields[(int)Devices[i].GetComponent<Device>().source.pos.x + ((int)Devices[i].GetComponent<Device>().source.pos.y*Height)].Color.r = Devices[i].GetComponent<Device>().source.getSourceVal();
+            }
         }
     }
     
@@ -279,19 +292,6 @@ public class Driver : MonoBehaviour {
         }
         if(Input.GetKeyDown(KeyCode.R)){
             setupCells();
-        }
-        if(Input.GetKeyDown(KeyCode.A)){
-            Source s = new Source(selectedCell, 10, .9f, 1*Mathf.Pow(10,7));
-            Sources.Add(s);
-        }
-        if(Input.GetKeyDown(KeyCode.C)){
-            Sources.Add(new Source(selectedCell, 10, .9f, 3*Mathf.Pow(10,7)));
-        }
-        if(Input.GetKeyDown(KeyCode.P)){
-            for(int i=0; i < Sources.Count; i++){
-                print("Started Source " + i+1);
-                Sources[i].start(time);
-            }
         }
         if(Input.GetKeyDown(KeyCode.B)){
             for(int i =(int)resolution/4; i<3*resolution/4;i++){
@@ -351,14 +351,7 @@ public class Driver : MonoBehaviour {
             }
         }
         for(int i=0; i<Devices.Count; i++){
-            Device d = Devices[i].GetComponent<Device>();
-            for(int w = (int)d.pos.x; w < d.pos.x+d.width; w++){
-                for(int h = (int)d.pos.y; h < d.pos.y+d.height; h++){
-                    if(w+d.width>=Width) continue;
-                    if(h+d.height>=Height) continue;
-                    HFields[w+h*Height].coef = d.u;
-                }
-            }
+            Devices[i].GetComponent<Device>().updateDeviceValues();
         }
     }
 
@@ -368,9 +361,6 @@ public class Driver : MonoBehaviour {
             if(selectedCell.x != -1 && selectedCell.y != -1){
                 Vector2 pos = selectedCell;
                 string srcText = "";
-                foreach(Source s in Sources){
-                    srcText += "____________\nPos: (" + s.pos.x + ", " + s.pos.y + ")\nVal: " + s.getSourceVal() + "\n";       
-                }
                 GameObject.Find("InfoText").GetComponent<Text>().text = "Info:\nCoords: "+ pos +
                     "\nE: " + EFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Position+
                     "\nH: " + HFields[(int)(pos.x)+(int)(Mathf.FloorToInt(pos.y)*resolution)].Position+

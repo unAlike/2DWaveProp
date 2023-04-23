@@ -14,6 +14,7 @@ RWStructuredBuffer<FDTD> E;
 RWTexture2D<float4> Result;
 float selectedX;
 float selectedY;
+float deviceX, deviceY;
 float resolution;
 float time;
 float EBrightness, HBrightness;
@@ -35,6 +36,11 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     float4 u = float4(1,1,1,1) * H[xPos+yPos*resolution].coef/100.0;
     //Result[id.xy] =  float4(H[xPos+(yPos*resolution)].pos*(HBrightness/100),1) + float4(E[xPos+(yPos*resolution)].pos*(EBrightness/100),1);
     Result[id.xy] = HF+EF + u;
+
+    if(xPos == deviceX && yPos == deviceY){
+        Result[id.xy] = float4(0,1,0,1);
+    }
+
     if(xPos == selectedX && yPos == selectedY){
         Result[id.xy] = float4(1,1,1,1);
     }

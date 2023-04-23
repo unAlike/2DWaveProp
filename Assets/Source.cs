@@ -7,7 +7,7 @@ public class Source
 {
     public float add;
     public float tao;
-    public float A,B;
+    public float B;
     public float Mag;
     public float startTime= 1000000000;
     public Vector2 pos = new Vector2(0,0);
@@ -15,7 +15,6 @@ public class Source
     public Source(Vector2 p, int mag, float a, float b){
         pos = p;
         Mag = mag;
-        A = a;
         B = b;
         tao = .5f/b;
     }
@@ -27,7 +26,7 @@ public class Source
     }
 
     public void update(float t){
-        add = (Mag * Mathf.Exp(-Mathf.Pow(((t - (float)startTime) / tao),2)));
+        add = (Mag * Mathf.Exp(-Mathf.Pow(((Mathf.Sin(t*B*10000000)) / tao),2)));
     }
 
     public void start(float currentTime){
