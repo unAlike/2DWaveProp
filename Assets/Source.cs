@@ -26,7 +26,7 @@ public class Source
     }
 
     public void update(float t){
-        add = (Mag * Mathf.Exp(-Mathf.Pow(((Mathf.Sin(t*B*10000000)) / tao),2)));
+        add = (Mag * (Mathf.Sin(t*B*10000000f)));
     }
 
     public void start(float currentTime){

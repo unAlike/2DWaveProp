@@ -7,6 +7,7 @@ public class Device : MonoBehaviour
 {
     public Vector2 pos = new Vector2(0,0);
     public bool active = false;
+    public bool perf = false;
     GameObject editMenu;
     Driver driver;
     public int type = 0;
@@ -37,13 +38,13 @@ public class Device : MonoBehaviour
             if(driver.Devices[editMenu.GetComponent<EditMenu>().devIndex] == gameObject){
                 gameObject.GetComponent<Image>().color = Color.green;
                 active = GameObject.Find("Toggle").GetComponent<Toggle>().isOn;
-                print(active);
                 type = GameObject.Find("Dropdown").GetComponent<TMPro.TMP_Dropdown>().value;
                 pos = new Vector2(GameObject.Find("xPos").GetComponent<Slider>().value,GameObject.Find("yPos").GetComponent<Slider>().value);
                 if(type == 1){
                     width = GameObject.Find("Width").GetComponent<Slider>().value;
                     height = GameObject.Find("Height").GetComponent<Slider>().value;
                     u = GameObject.Find("U").GetComponent<Slider>().value;
+                    perf = GameObject.Find("Perf").GetComponent<Toggle>().isOn;
                 }
                 if(type == 2){
                     source.pos = pos;
@@ -86,6 +87,7 @@ public class Device : MonoBehaviour
                         if(w>=resolution || w<0) continue;
                         if(h>=resolution || h<0) continue;
                         GameObject.Find("SimulationPanel").GetComponent<Driver>().HFields[w+h*resolution].coef = u;
+                        if(perf) GameObject.Find("SimulationPanel").GetComponent<Driver>().HFields[w+h*resolution].cond = new Vector2(1,1);
                     }
                 }
             }

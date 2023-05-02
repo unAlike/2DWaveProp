@@ -3377,7 +3377,7 @@ MonoBehaviour:
   render: {fileID: 8400000, guid: 28fe384c87094df429f5ef7de81fda33, type: 2}
   EBrightness: 50
   HBrightness: 50
-  resolution: 200
+  resolution: 250
   timeStep: 0.000000001667
   C: 0
   ur: 1

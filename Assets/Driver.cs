@@ -176,8 +176,8 @@ public class Driver : MonoBehaviour {
         SimCompute.SetBuffer(0, "E", Ef);
         SimCompute.SetTexture(0,"Result",render);
         if(editMenu.activeSelf){
-            SimCompute.SetFloat("deviceX", devicePos.x);
-            SimCompute.SetFloat("deviceY", devicePos.y);
+            SimCompute.SetFloat("deviceX", (int)devicePos.x);
+            SimCompute.SetFloat("deviceY", (int)devicePos.y);
         }
         else{
             SimCompute.SetFloat("deviceX", -1);
@@ -247,7 +247,6 @@ public class Driver : MonoBehaviour {
         for(int i = 0; i < Devices.Count; i++){
             if(Devices[i].GetComponent<Device>().active && Devices[i].GetComponent<Device>().type == 2){
                 Devices[i].GetComponent<Device>().source.update(time);
-                print(Devices[i].GetComponent<Device>().source.getSourceVal());
                 EFields[(int)Devices[i].GetComponent<Device>().source.pos.x + ((int)Devices[i].GetComponent<Device>().source.pos.y*Height)].Color.r = Devices[i].GetComponent<Device>().source.getSourceVal();
             }
         }
@@ -290,6 +289,9 @@ public class Driver : MonoBehaviour {
         if(Input.GetKeyDown(KeyCode.E)){
             updateEField();
         }
+        if(Input.GetKeyDown(KeyCode.D)){
+            print(devicePos);
+        }
         if(Input.GetKeyDown(KeyCode.R)){
             setupCells();
         }
@@ -315,12 +317,14 @@ public class Driver : MonoBehaviour {
 
     public void addDevice(){
         GameObject content = GameObject.Find("Content").gameObject;
+        editMenu.SetActive(false);
         GameObject device = Instantiate(devicePrefab);
         device.transform.SetParent(content.transform, false);
         Rect newR = content.GetComponent<RectTransform>().rect;
         newR.height = content.transform.childCount * device.GetComponent<RectTransform>().rect.height;
         content.GetComponent<RectTransform>().sizeDelta = new Vector2(content.GetComponent<RectTransform>().sizeDelta.x,device.GetComponent<RectTransform>().rect.height * content.transform.childCount);
         Devices.Add(device);
+        editMenu.SetActive(true);
         //device.transform.localScale = Vector3.one;
     }
 

@@ -63,7 +63,7 @@ public class EditMenu : MonoBehaviour
             MaterialMenu.SetActive(false);
             Device device = driver.Devices[devIndex].GetComponent<Device>();
             GameObject.Find("Power").GetComponent<Slider>().value = device.source.Mag;
-            GameObject.Find("PowerText").GetComponent<TMPro.TextMeshProUGUI>().text = "Power: "+ device.source.Mag;
+            GameObject.Find("PowerText").GetComponent<TMPro.TextMeshProUGUI>().text = "Power: "+ device.source.Mag.ToString("#.##");
             GameObject.Find("WaveLength").GetComponent<Slider>().value = device.source.B;
             GameObject.Find("WaveLengthText").GetComponent<TMPro.TextMeshProUGUI>().text = "Wavelength: "+ device.source.B;
             // GameObject.Find("Frequency").GetComponent<Slider>().value = device.source.;
@@ -73,7 +73,7 @@ public class EditMenu : MonoBehaviour
 
     public void updateEdit(){
         driver = GameObject.Find("SimulationPanel").GetComponent<Driver>();
-        if(driver.Devices.Count>0){
+        if(driver.Devices.Count>0 && driver.Devices.Contains(activeDevice.gameObject)){
             Device device = activeDevice.GetComponent<Device>();
             GameObject.Find("xPos").GetComponent<Slider>().value = device.pos.x;
             GameObject.Find("yPos").GetComponent<Slider>().value = device.pos.y;
@@ -86,12 +86,12 @@ public class EditMenu : MonoBehaviour
                 GameObject.Find("Height").GetComponent<Slider>().value = device.height;
                 GameObject.Find("HeightText").GetComponent<TMPro.TextMeshProUGUI>().text = "Height: "+ device.height;
                 GameObject.Find("U").GetComponent<Slider>().value = device.u;
-                GameObject.Find("UText").GetComponent<TMPro.TextMeshProUGUI>().text = "U: "+ device.u;
+                GameObject.Find("UText").GetComponent<TMPro.TextMeshProUGUI>().text = "U: "+ device.u.ToString("#.##");
             }
             //Source
             if(device.type == 2){
-                GameObject.Find("PowerText").GetComponent<TMPro.TextMeshProUGUI>().text = "" + device.source.Mag;
-                GameObject.Find("WaveLengthText").GetComponent<TMPro.TextMeshProUGUI>().text = "" + device.source.B;
+                GameObject.Find("PowerText").GetComponent<TMPro.TextMeshProUGUI>().text = "Power: " + device.source.Mag.ToString("#.##");
+                GameObject.Find("WaveLengthText").GetComponent<TMPro.TextMeshProUGUI>().text = "Frequency: " + device.source.B;
             }
         }
     }
